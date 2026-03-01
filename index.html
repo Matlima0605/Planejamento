@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#191970">
+    <link rel="apple-touch-icon" href="icon.png">
     <title>Nossas Finanças Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,7 +13,7 @@
         body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         .active-tab { border-bottom: 3px solid #191970; color: #191970; }
         .hidden { display: none; }
-        .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px;}
+        .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px;}
         .item-selected { border-color: #191970 !important; background: #f5f3ff !important; transform: scale(0.98); }
         .bank-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; margin-bottom: 4px; }
         .method-btn { border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
@@ -32,15 +33,15 @@
     </header>
 
     <div class="px-4 grid grid-cols-3 gap-3 mb-6 max-w-md mx-auto">
-        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+        <div id="card-income" onclick="setFilter('income')" class="bg-white p-3 rounded-2xl shadow-sm text-center cursor-pointer transition border-2 border-slate-100">
             <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Entradas</p>
             <span id="totalIncome" class="text-xs font-extrabold text-emerald-600">R$ 0</span>
         </div>
-        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+        <div id="card-expense" onclick="setFilter('expense')" class="bg-white p-3 rounded-2xl shadow-sm text-center cursor-pointer transition border-2 border-slate-100">
             <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Saídas</p>
             <span id="totalExpense" class="text-xs font-extrabold text-red-500">R$ 0</span>
         </div>
-        <div class="p-3 rounded-2xl shadow-md text-center" style="background-color: #191970;">
+        <div id="card-all" onclick="setFilter('all')" class="p-3 rounded-2xl shadow-md text-center cursor-pointer transition border-2 border-transparent bg-[#191970]">
             <p class="text-[9px] font-bold text-indigo-200 uppercase mb-1">Saldo</p>
             <span id="totalBalance" class="text-xs font-extrabold text-white">R$ 0</span>
         </div>
@@ -80,14 +81,14 @@
                 </div>
 
                 <div class="space-y-4">
-                    <input type="date" id="entryDate" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none">
+                    <input type="date" id="entryDate" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-100">
                     <input type="number" id="entryValue" inputmode="decimal" placeholder="Valor R$ 0,00" class="w-full p-4 bg-slate-50 rounded-2xl text-2xl font-extrabold text-indigo-600 outline-none">
                     <input type="text" id="entryDesc" placeholder="Descrição" class="w-full p-4 bg-slate-50 rounded-2xl font-semibold outline-none">
                     
                     <div id="recurringOptions" class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div class="flex items-center justify-between">
                             <label class="text-[10px] font-extrabold uppercase text-slate-500">Repetir / Parcelar?</label>
-                            <input type="checkbox" id="isFixed" onchange="toggleExtraFields()" class="w-5 h-5">
+                            <input type="checkbox" id="isFixed" onchange="toggleExtraFields()" class="w-5 h-5 accent-indigo-600">
                         </div>
                         <div id="fixedMonthsContainer" class="hidden mt-3">
                             <input type="number" id="repeatMonths" placeholder="Meses de repetição" class="w-full p-3 rounded-xl border outline-none">
@@ -97,8 +98,7 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar</button>
-                <button id="btnCancelEdit" onclick="cancelEditing()" class="hidden w-full text-slate-400 py-3 font-bold text-[10px] uppercase mt-2">Cancelar Edição</button>
+                <button onclick="processSave(false)" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar</button>
             </div>
         </section>
 
@@ -106,7 +106,7 @@
             <div class="space-y-6">
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
                     <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Sincronização Google</h3>
-                    <input type="text" id="googleUrlInput" placeholder="Cole aqui o URL /exec" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
+                    <input type="text" id="googleUrlInput" placeholder="URL /exec do Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
                     <div class="grid grid-cols-2 gap-3">
                         <button id="btnUpload" onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Enviar Nuvem</button>
                         <button id="btnDownload" onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Baixar Tudo</button>
@@ -131,13 +131,51 @@
         </section>
     </main>
 
+    <div id="editModal" class="hidden fixed inset-0 bg-slate-900/70 z-[100] p-4 flex flex-col justify-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-[2rem] shadow-2xl w-full max-w-md mx-auto max-h-[95vh] overflow-y-auto">
+            <h2 class="text-xl font-extrabold mb-4 text-center uppercase tracking-tighter text-slate-800">Editar Lançamento</h2>
+            
+            <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Quem?</label>
+            <div id="editPersonSelector" class="grid grid-cols-3 gap-2 mb-3 mt-1"></div>
+            
+            <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Onde?</label>
+            <div id="editBankSelector" class="grid grid-cols-3 gap-2 mb-3 mt-1"></div>
+            
+            <div id="editMethodSectionContainer" class="mb-3">
+                <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Como?</label>
+                <div class="flex gap-2 mt-1">
+                    <button onclick="selectModalMethod('Débito')" id="edit-btn-debito" class="method-btn">Débito / Pix</button>
+                    <button onclick="selectModalMethod('Crédito')" id="edit-btn-credito" class="method-btn">Crédito</button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <input type="date" id="editEntryDate" class="w-full p-3 bg-slate-50 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-100">
+                <input type="number" id="editEntryValue" inputmode="decimal" class="w-full p-3 bg-slate-50 rounded-2xl text-xl font-extrabold text-indigo-600 outline-none">
+                <input type="text" id="editEntryDesc" class="w-full p-3 bg-slate-50 rounded-2xl font-semibold outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="closeEditModal()" class="w-full bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-transform">Cancelar</button>
+                <button onclick="processSave(true)" class="w-full bg-[#191970] text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Atualizar</button>
+            </div>
+            
+            <button onclick="deleteFromModal()" class="w-full text-red-400 py-4 font-bold text-[9px] uppercase mt-2 tracking-widest">🗑️ Apagar Lançamento</button>
+        </div>
+    </div>
+
     <script>
+        // --- ESTADO GLOBAL ---
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
         let settings = JSON.parse(localStorage.getItem('fin_settings_v26')) || { banks: {}, people: {} };
         let data = JSON.parse(localStorage.getItem('fin_data_v26')) || { entries: [] };
-        let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = 'Débito', editingId = null;
-        let editingPersonId = null, editingBankId = null;
+        
+        // Variáveis de Controle
+        let currentType = 'income', currentFilter = 'all';
+        let selectedBankId = '', selectedPersonId = '', selectedMethod = '';
+        let editingId = null, editingPersonId = null, editingBankId = null;
 
+        // --- FILTROS DE DATA ---
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
         const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -149,15 +187,18 @@
         function saveData() { localStorage.setItem('fin_data_v26', JSON.stringify(data)); }
         function saveSett() { localStorage.setItem('fin_settings_v26', JSON.stringify(settings)); renderConfig(); }
 
+        // --- NAVEGAÇÃO E FILTROS ---
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
             document.getElementById(target).classList.remove('hidden');
+            
             if(tab === 'ganhos' || tab === 'gastos') {
-                if (!editingId) { currentType = tab === 'ganhos' ? 'income' : 'expense'; resetFormFields(); }
-                setupForm();
+                currentType = tab === 'ganhos' ? 'income' : 'expense'; 
+                resetFormFields(); // Zera tudo ao abrir
             }
-            if(tab === 'config') { editingId = null; renderConfig(); }
+            if(tab === 'config') { renderConfig(); }
+            
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.toggle('active-tab', b.id === 'tab-'+tab);
                 b.classList.toggle('text-slate-400', b.id !== 'tab-'+tab);
@@ -165,82 +206,153 @@
             render();
         }
 
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            render();
+        }
+
+        // --- RENDERIZADOR DE SELETORES (Reutilizável para Form e Modal) ---
+        function renderSelectors(containerPrefix, bankId, personId, methodCb, bankCb, personCb) {
+            const bIds = Object.keys(settings.banks);
+            const pIds = Object.keys(settings.people);
+
+            document.getElementById(`${containerPrefix}BankSelector`).innerHTML = bIds.map(id => `
+                <div onclick="${bankCb}('${id}')" class="bank-option p-2 ${bankId === id ? 'item-selected' : ''}">
+                    <div class="bank-avatar" style="background-color: ${settings.banks[id].color}">${settings.banks[id].init}</div>
+                    <span class="text-[7px] font-bold text-slate-500 uppercase">${settings.banks[id].name}</span>
+                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Bancos em ⚙️</p>';
+
+            document.getElementById(`${containerPrefix}PersonSelector`).innerHTML = pIds.map(id => `
+                <div onclick="${personCb}('${id}')" class="person-option p-2 text-[8px] font-bold uppercase ${personId === id ? 'item-selected' : ''}">
+                    ${settings.people[id].name}
+                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Pessoas em ⚙️</p>';
+
+            document.getElementById(`${containerPrefix}MethodSectionContainer`).classList.toggle('hidden', currentType === 'income');
+            
+            const btnDeb = document.getElementById(containerPrefix === '' ? 'btn-debito' : 'edit-btn-debito');
+            const btnCred = document.getElementById(containerPrefix === '' ? 'btn-credito' : 'edit-btn-credito');
+            
+            if (btnDeb) btnDeb.className = `method-btn ${selectedMethod === 'Débito' ? 'method-selected' : ''}`;
+            if (btnCred) btnCred.className = `method-btn ${selectedMethod === 'Crédito' ? 'method-selected' : ''}`;
+        }
+
+        function setupForm() {
+            renderSelectors('', selectedBankId, selectedPersonId, 'selectMethod', 'selectBank', 'selectPerson');
+            const btn = document.getElementById('btnSave');
+            btn.style.backgroundColor = currentType === 'income' ? '#10b981' : '#ef4444';
+        }
+
+        function setupEditForm() {
+            renderSelectors('edit', selectedBankId, selectedPersonId, 'selectModalMethod', 'selectModalBank', 'selectModalPerson');
+        }
+
         function resetFormFields() {
             document.getElementById('entryValue').value = '';
             document.getElementById('entryDesc').value = '';
             document.getElementById('entryDate').valueAsDate = new Date();
             document.getElementById('isFixed').checked = false;
+            // Zera as seleções forçando o usuário a escolher
+            selectedBankId = '';
+            selectedPersonId = '';
+            selectedMethod = '';
             editingId = null;
             toggleExtraFields();
+            setupForm();
         }
 
-        function cancelEditing() { resetFormFields(); showTab('resumo'); }
-
-        function setupForm() {
-            const bIds = Object.keys(settings.banks);
-            const pIds = Object.keys(settings.people);
-            if (!selectedBankId && bIds.length > 0) selectedBankId = bIds[0];
-            if (!selectedPersonId && pIds.length > 0) selectedPersonId = pIds[0];
-
-            document.getElementById('bankSelector').innerHTML = bIds.map(id => `
-                <div onclick="selectedBankId='${id}';setupForm()" class="bank-option p-3 ${selectedBankId === id ? 'item-selected' : ''}">
-                    <div class="bank-avatar" style="background-color: ${settings.banks[id].color}">${settings.banks[id].init}</div>
-                    <span class="text-[8px] font-bold text-slate-500 uppercase">${settings.banks[id].name}</span>
-                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Bancos em ⚙️</p>';
-
-            document.getElementById('personSelector').innerHTML = pIds.map(id => `
-                <div onclick="selectedPersonId='${id}';setupForm()" class="person-option p-3 text-[9px] font-bold uppercase ${selectedPersonId === id ? 'item-selected' : ''}">
-                    ${settings.people[id].name}
-                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Pessoas em ⚙️</p>';
-
-            document.getElementById('methodSectionContainer').classList.toggle('hidden', currentType === 'income');
-            document.getElementById('btn-debito').className = `method-btn ${selectedMethod === 'Débito' ? 'method-selected' : ''}`;
-            document.getElementById('btn-credito').className = `method-btn ${selectedMethod === 'Crédito' ? 'method-selected' : ''}`;
-            
-            const btn = document.getElementById('btnSave');
-            btn.style.backgroundColor = currentType === 'income' ? '#10b981' : '#ef4444';
-            btn.innerText = editingId ? "Atualizar" : "Confirmar";
-            document.getElementById('btnCancelEdit').classList.toggle('hidden', !editingId);
-            document.getElementById('formTitle').innerText = editingId ? "Editando" : "Novo Lançamento";
-            document.getElementById('recurringOptions').classList.toggle('hidden', !!editingId);
-            toggleExtraFields();
-        }
-
+        // Funções de clique das opções
+        function selectBank(id) { selectedBankId = id; setupForm(); }
+        function selectModalBank(id) { selectedBankId = id; setupEditForm(); }
+        function selectPerson(id) { selectedPersonId = id; setupForm(); }
+        function selectModalPerson(id) { selectedPersonId = id; setupEditForm(); }
         function selectMethod(m) { selectedMethod = m; setupForm(); }
+        function selectModalMethod(m) { selectedMethod = m; setupEditForm(); }
+
         function toggleExtraFields() {
             const isChecked = document.getElementById('isFixed').checked;
             document.getElementById('fixedMonthsContainer').classList.toggle('hidden', !isChecked || selectedMethod === 'Crédito');
             document.getElementById('installmentsContainer').classList.toggle('hidden', !isChecked || selectedMethod === 'Débito' || currentType === 'income');
         }
 
-        function saveEntry() {
-            const val = parseFloat(document.getElementById('entryValue').value);
-            const desc = document.getElementById('entryDesc').value;
-            const dateInput = document.getElementById('entryDate').value;
-            if(!val || !desc || !dateInput) return alert("Preencha tudo!");
+        // --- SISTEMA DE MODAL ---
+        function openEditModal(id) {
+            const entry = data.entries.find(e => e.id === id);
+            if (!entry) return;
+            
+            editingId = id;
+            currentType = entry.type;
+            selectedBankId = entry.bankId;
+            selectedPersonId = entry.personId;
+            selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
+            
+            document.getElementById('editEntryValue').value = entry.value;
+            document.getElementById('editEntryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
+            const parts = entry.date.split('/');
+            document.getElementById('editEntryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            
+            setupEditForm();
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            editingId = null;
+            resetFormFields(); // Limpa as variáveis para a tela principal
+        }
+
+        // --- MARCAR COMO PAGO / PENDENTE ---
+        function toggleStatus(id) {
+            const entry = data.entries.find(e => e.id === id);
+            if (entry) {
+                entry.isPaid = !entry.isPaid;
+                saveData();
+                render();
+            }
+        }
+
+        // --- SALVAR (Novo ou Editado) ---
+        function processSave(isEdit) {
+            const prefix = isEdit ? 'editEntry' : 'entry';
+            const val = parseFloat(document.getElementById(`${prefix}Value`).value);
+            const desc = document.getElementById(`${prefix}Desc`).value.trim();
+            const dateInput = document.getElementById(`${prefix}Date`).value;
+            
+            if(!val || !desc || !dateInput) return alert("Preencha o Valor, Descrição e Data!");
+            if(!selectedBankId) return alert("Selecione um Banco/Onde!");
+            if(!selectedPersonId) return alert("Selecione uma Pessoa/Quem!");
+            if(!selectedMethod && currentType === 'expense') return alert("Selecione a forma de pagamento (Como)!");
             
             const d = new Date(dateInput + 'T12:00:00');
             const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
-            if (editingId) {
+            // Lógica automática de Vencimento
+            let isPaid = true;
+            if (currentType === 'expense') {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (d > today) isPaid = false; // Se a data for no futuro, nasce como pendente
+            }
+
+            if (isEdit && editingId) {
                 const idx = data.entries.findIndex(e => e.id === editingId);
                 const original = data.entries[idx];
                 let applyToAll = false;
+                
                 if (original.groupId) applyToAll = confirm("Aplicar as mudanças a todos os futuros deste grupo?");
 
                 if (applyToAll) {
                     data.entries.forEach(e => {
                         if (e.groupId === original.groupId && e.timestamp >= original.timestamp) {
-                            e.value = val; e.bankId = selectedBankId; e.personId = selectedPersonId;
+                            e.value = val; e.bankId = selectedBankId; e.personId = selectedPersonId; e.method = selectedMethod;
                             const match = e.desc.match(/\s\(\d+\/\d+\)$/);
                             e.desc = desc + (match ? match[0] : "");
                         }
                     });
                 } else {
                     const match = original.desc.match(/\s\(\d+\/\d+\)$/);
-                    data.entries[idx] = { ...original, value: val, desc: desc + (match ? match[0] : ""), date: dateStr, timestamp: d.getTime(), m: d.getMonth(), y: d.getFullYear(), bankId: selectedBankId, personId: selectedPersonId };
+                    data.entries[idx] = { ...original, value: val, desc: desc + (match ? match[0] : ""), date: dateStr, timestamp: d.getTime(), m: d.getMonth(), y: d.getFullYear(), bankId: selectedBankId, personId: selectedPersonId, method: selectedMethod };
                 }
-                editingId = null;
+                closeEditModal();
             } else {
                 let loops = 1, valPerLoop = val;
                 if (document.getElementById('isFixed').checked) {
@@ -250,30 +362,63 @@
                     } else { loops = parseInt(document.getElementById('repeatMonths').value) || 1; }
                 }
                 const gId = loops > 1 ? 'g' + Date.now() : null;
+                
                 for (let i = 0; i < loops; i++) {
                     const future = new Date(d); future.setMonth(d.getMonth() + i);
+                    
+                    // Parcelas futuras sempre nascem pendentes
+                    let loopIsPaid = isPaid;
+                    if (i > 0 && currentType === 'expense') loopIsPaid = false; 
+
                     data.entries.push({
                         id: Date.now() + i, groupId: gId, type: currentType, value: valPerLoop,
                         desc: loops > 1 ? `${desc} (${i+1}/${loops})` : desc,
                         bankId: selectedBankId, personId: selectedPersonId,
                         method: currentType === 'income' ? 'Recebido' : selectedMethod,
                         date: `${String(future.getDate()).padStart(2,'0')}/${String(future.getMonth()+1).padStart(2,'0')}/${future.getFullYear()}`,
-                        timestamp: future.getTime(), m: future.getMonth(), y: future.getFullYear()
+                        timestamp: future.getTime(), m: future.getMonth(), y: future.getFullYear(),
+                        isPaid: loopIsPaid
                     });
                 }
+                resetFormFields();
             }
-            saveData(); showTab('resumo'); resetFormFields();
+            saveData(); showTab('resumo');
         }
 
+        function deleteFromModal() {
+            if (!editingId) return;
+            const entry = data.entries.find(e => e.id === editingId);
+            if (entry.groupId && confirm("Apagar todo o grupo futuro?")) {
+                data.entries = data.entries.filter(e => !(e.groupId === entry.groupId && e.timestamp >= entry.timestamp));
+            } else if(confirm("Apagar APENAS este registro?")) {
+                data.entries = data.entries.filter(e => e.id !== editingId);
+            }
+            saveData(); closeEditModal(); render();
+        }
+
+        // --- RENDERIZAÇÃO E FILTROS VISUAIS ---
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
-            const list = document.getElementById('historyList'); list.innerHTML = '';
-            const filtered = data.entries.filter(e => Number(e.m) === selM && Number(e.y) === selY);
-            document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
             
-            filtered.sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
-                if(e.type === 'income') inT += e.value; else exT += e.value;
+            // 1. Calcula os totais do mês (ignora os filtros dos cards)
+            const monthEntries = data.entries.filter(e => Number(e.m) === selM && Number(e.y) === selY);
+            monthEntries.forEach(e => {
+                if(e.type === 'income') inT += e.value; 
+                else exT += e.value;
+            });
+
+            // 2. Destaca o card selecionado
+            document.getElementById('card-income').className = `bg-white p-3 rounded-2xl shadow-sm text-center cursor-pointer transition border-2 ${currentFilter === 'income' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100'}`;
+            document.getElementById('card-expense').className = `bg-white p-3 rounded-2xl shadow-sm text-center cursor-pointer transition border-2 ${currentFilter === 'expense' ? 'border-red-400 bg-red-50' : 'border-slate-100'}`;
+            document.getElementById('card-all').className = `p-3 rounded-2xl shadow-md text-center cursor-pointer transition border-2 ${currentFilter === 'all' ? 'border-indigo-300 scale-105' : 'border-transparent'} bg-[#191970]`;
+
+            // 3. Filtra e renderiza a lista
+            const list = document.getElementById('historyList'); list.innerHTML = '';
+            const filteredList = monthEntries.filter(e => currentFilter === 'all' || e.type === currentFilter);
+            document.getElementById('emptyState').classList.toggle('hidden', filteredList.length > 0);
+            
+            filteredList.sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
                 const b = settings.banks[e.bankId] || { name: '?', color: '#ccc', init: '?' };
                 let cleanDesc = e.desc;
                 let installmentHtml = "";
@@ -283,8 +428,18 @@
                     installmentHtml = `<span class="installment-badge">${match[1]}</span>`;
                 }
 
+                // Botão de Vencimento/Pago
+                let statusBadge = "";
+                if (e.type === 'expense') {
+                    if (e.isPaid === false) {
+                        statusBadge = `<button onclick="event.stopPropagation(); toggleStatus(${e.id})" class="mt-1 bg-red-100 text-red-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border border-red-200 active:scale-95 transition-transform">Pendente</button>`;
+                    } else {
+                        statusBadge = `<button onclick="event.stopPropagation(); toggleStatus(${e.id})" class="mt-1 bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border border-emerald-200 active:scale-95 transition-transform">Pago</button>`;
+                    }
+                }
+
                 list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center active:scale-95 transition-transform" onclick="editEntry(${e.id})">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center active:scale-95 transition-transform cursor-pointer" onclick="openEditModal(${e.id})">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-[10px]" style="background-color: ${b.color}">${b.init}</div>
                             <div>
@@ -293,47 +448,23 @@
                                     ${installmentHtml}
                                 </div>
                                 <p class="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">${e.date} • ${b.name}</p>
+                                ${statusBadge}
                             </div>
                         </div>
                         <div class="text-right flex flex-col items-end">
                             <p class="font-black text-xs ${e.type === 'income' ? 'text-emerald-500' : 'text-red-500'}">R$ ${e.value.toFixed(2)}</p>
-                            <button onclick="event.stopPropagation(); deleteEntry(${e.id})" class="text-[7px] text-slate-300 font-bold uppercase mt-1">Apagar</button>
                         </div>
                     </div>`;
             });
+            
             document.getElementById('totalIncome').innerText = `R$ ${inT.toFixed(0)}`;
             document.getElementById('totalExpense').innerText = `R$ ${exT.toFixed(0)}`;
             const bal = inT - exT;
             document.getElementById('totalBalance').innerText = `R$ ${bal.toFixed(0)}`;
-            document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/30).toFixed(2) : '0,00'}`;
+            document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/30).toFixed(2) : '0,00'}`; // Sugestão para 30 dias
         }
 
-        function editEntry(id) {
-            const entry = data.entries.find(e => e.id === id);
-            if (!entry) return;
-            editingId = id;
-            currentType = entry.type;
-            selectedBankId = entry.bankId;
-            selectedPersonId = entry.personId;
-            selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
-            document.getElementById('entryValue').value = entry.value;
-            document.getElementById('entryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
-            const parts = entry.date.split('/');
-            document.getElementById('entryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            showTab(entry.type === 'income' ? 'ganhos' : 'gastos');
-        }
-
-        function deleteEntry(id) {
-            const entry = data.entries.find(e => e.id === id);
-            if (!entry) return;
-            if (entry.groupId && confirm("Apagar todo o grupo futuro?")) {
-                data.entries = data.entries.filter(e => !(e.groupId === entry.groupId && e.timestamp >= entry.timestamp));
-            } else if(confirm("Apagar APENAS este registro?")) {
-                data.entries = data.entries.filter(e => e.id !== id);
-            }
-            saveData(); render();
-        }
-
+        // --- CONFIGURAÇÕES (PESSOAS/BANCOS) ---
         function renderConfig() {
             document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
                 <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1 border border-slate-100">
@@ -355,151 +486,86 @@
             document.getElementById('personNameInput').value = settings.people[id].name;
             document.getElementById('btnSavePerson').innerText = "Atualizar";
         }
-
         function savePerson() {
             const n = document.getElementById('personNameInput').value.trim();
             if(!n) return;
-            if (editingPersonId) {
-                settings.people[editingPersonId].name = n;
-                editingPersonId = null;
-                document.getElementById('btnSavePerson').innerText = "OK";
-            } else {
-                settings.people['p' + Date.now()] = { name: n };
-            }
-            document.getElementById('personNameInput').value = '';
-            saveSett();
+            if (editingPersonId) { settings.people[editingPersonId].name = n; editingPersonId = null; document.getElementById('btnSavePerson').innerText = "OK"; } 
+            else { settings.people['p' + Date.now()] = { name: n }; }
+            document.getElementById('personNameInput').value = ''; saveSett();
         }
 
         function editBank(id) {
             editingBankId = id;
             document.getElementById('bankNameInput').value = settings.banks[id].name;
             document.getElementById('bankColorInput').value = settings.banks[id].color;
-            document.getElementById('btnSaveBank').innerText = "ATUALIZAR";
+            document.getElementById('btnSaveBank').innerText = "Atualizar";
         }
-
         function saveBank() {
-            const n = document.getElementById('bankNameInput').value.trim();
-            const c = document.getElementById('bankColorInput').value;
+            const n = document.getElementById('bankNameInput').value.trim(); const c = document.getElementById('bankColorInput').value;
             if(!n) return;
-            if (editingBankId) {
-                settings.banks[editingBankId].name = n;
-                settings.banks[editingBankId].color = c;
-                settings.banks[editingBankId].init = n[0].toUpperCase();
-                editingBankId = null;
-                document.getElementById('btnSaveBank').innerText = "Salvar Banco";
-            } else {
-                settings.banks['b' + Date.now()] = { name: n, color: c, init: n[0].toUpperCase() };
-            }
-            document.getElementById('bankNameInput').value = '';
-            saveSett();
+            if (editingBankId) { settings.banks[editingBankId].name = n; settings.banks[editingBankId].color = c; settings.banks[editingBankId].init = n[0].toUpperCase(); editingBankId = null; document.getElementById('btnSaveBank').innerText = "Salvar Banco"; } 
+            else { settings.banks['b' + Date.now()] = { name: n, color: c, init: n[0].toUpperCase() }; }
+            document.getElementById('bankNameInput').value = ''; saveSett();
         }
 
-        function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
-        function deleteBank(id) { if(confirm("Excluir?")) { delete settings.banks[id]; saveSett(); } }
+        function deletePerson(id) { if(confirm("Excluir Pessoa?")) { delete settings.people[id]; saveSett(); } }
+        function deleteBank(id) { if(confirm("Excluir Banco?")) { delete settings.banks[id]; saveSett(); } }
 
         // --- SISTEMA UNIVERSAL DE SINCRONIZAÇÃO (DUPLO MOTOR) ---
-        
-        // Função Auxiliar que processa a string que volta do servidor
         function processSyncData(rawString) {
             try {
-                // Caso a requisição seja nativa, ela já pode vir como objeto, se vier como string, dá parse.
                 const resData = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
-                
                 if (resData && resData.entries) {
                     data.entries = resData.entries.map(e => ({
-                        ...e,
-                        id: Number(e.id),
-                        value: parseFloat(e.value),
-                        timestamp: Number(e.timestamp),
-                        m: Number(e.m),
-                        y: Number(e.y)
+                        ...e, id: Number(e.id), value: parseFloat(e.value), timestamp: Number(e.timestamp), m: Number(e.m), y: Number(e.y),
+                        isPaid: e.isPaid !== undefined ? e.isPaid : true // Mantém legado como pago
                     }));
-                } else {
-                    data.entries = [];
-                }
+                } else { data.entries = []; }
                 settings = resData.settings || { banks: {}, people: {} };
-                
-                saveData(); 
-                saveSett(); 
-                render();
+                saveData(); saveSett(); render();
                 alert("Dados Baixados e Restaurados!");
-            } catch (err) {
-                alert("Falha ao processar os dados da planilha. Tente enviar os dados locais primeiro para corrigir.");
-            }
+            } catch (err) { alert("Falha ao processar os dados da planilha."); }
         }
 
         async function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
-            
-            localStorage.setItem('google_sync_url', url);
-            GOOGLE_SCRIPT_URL = url;
-
-            const btn = document.getElementById('btnUpload');
-            btn.innerText = "Enviando..."; 
-            btn.disabled = true;
-
+            localStorage.setItem('google_sync_url', url); GOOGLE_SCRIPT_URL = url;
+            const btn = document.getElementById('btnUpload'); btn.innerText = "Enviando..."; btn.disabled = true;
             const payload = JSON.stringify({ entries: data.entries, settings: settings });
 
             try {
-                // Envio via Form-UrlEncoded (O formato mais imune a bloqueios Mobile)
-                await fetch(url, {
-                    method: 'POST',
-                    body: new URLSearchParams({ payload: payload }),
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
+                await fetch(url, { method: 'POST', body: new URLSearchParams({ payload: payload }), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
                 alert("Dados enviados para a Nuvem com sucesso!");
             } catch(err) {
-                // Celulares às vezes bloqueiam a leitura do OK do servidor, mas o envio foi feito.
                 alert("Sincronização processada (Modo Offline). Verifique no PC.");
-            } finally {
-                btn.innerText = "Enviar Nuvem"; 
-                btn.disabled = false;
-            }
+            } finally { btn.innerText = "Enviar Nuvem"; btn.disabled = false; }
         }
 
         async function downloadFromCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
-
-            const btn = document.getElementById('btnDownload');
-            btn.innerText = "Baixando..."; 
-            btn.disabled = true;
-
+            const btn = document.getElementById('btnDownload'); btn.innerText = "Baixando..."; btn.disabled = true;
             const resetBtn = () => { btn.innerText = "Baixar Tudo"; btn.disabled = false; };
 
             try {
-                // TENTATIVA 1: O Motor Principal (Fetch API Nativo)
                 const res = await fetch(`${url}?t=${Date.now()}`);
                 if (!res.ok) throw new Error("Erro na rede");
-                const text = await res.text();
-                processSyncData(text);
-                resetBtn();
+                const text = await res.text(); processSyncData(text); resetBtn();
             } catch (err) {
-                // TENTATIVA 2: O Motor Secundário de Emergência (Injeção JSONP)
-                // Se o Safari/Mobile Chrome barrar o Fetch por segurança, o JSONP fura o bloqueio.
                 const callbackName = 'syncCb_' + Date.now();
-                
                 window[callbackName] = function(rawString) {
-                    processSyncData(rawString);
-                    delete window[callbackName];
-                    document.getElementById(callbackName).remove();
-                    resetBtn();
+                    processSyncData(rawString); delete window[callbackName];
+                    document.getElementById(callbackName).remove(); resetBtn();
                 };
-
-                const script = document.createElement('script');
-                script.id = callbackName;
+                const script = document.createElement('script'); script.id = callbackName;
                 script.src = `${url}?callback=${callbackName}&t=${Date.now()}`;
-                
-                script.onerror = () => { 
-                    alert("Acesso Bloqueado pelo Celular. O Script no Google está marcado como 'Qualquer pessoa'?"); 
-                    resetBtn(); 
-                };
-                
+                script.onerror = () => { alert("Acesso Bloqueado. O Script no Google está como 'Qualquer pessoa'?"); resetBtn(); };
                 document.body.appendChild(script);
             }
         }
 
+        // INICIALIZAÇÃO
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
