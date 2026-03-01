@@ -388,42 +388,85 @@
 
 // Removida a chave extra que estava aqui
 
-function downloadFromCloud() {
+function downloadFromCloud(event) {
     const urlInput = document.getElementById('googleUrlInput');
     GOOGLE_SCRIPT_URL = urlInput.value.trim();
-    if (!GOOGLE_SCRIPT_URL) return alert("URL necessária para download!");
     
+    if (!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.includes('/exec')) {
+        return alert("URL inválida! Certifique-se de que termina com /exec");
+    }
+
+    // Feedback Visual
+    const btn = event ? event.currentTarget : document.querySelector('button[onclick*="downloadFromCloud"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Baixando...";
+    btn.disabled = true;
+
     const callbackName = 'jsonp_' + Date.now();
     const script = document.createElement('script');
     
-    window[callbackName] = function(response) {
-        if(response && response.entries && response.settings) {
-            // Garante que os números e datas sejam interpretados corretamente
-            data.entries = response.entries.map(e => ({
-                ...e,
-                id: Number(e.id),
-                value: parseFloat(e.value),
-                m: parseInt(e.m),
-                y: parseInt(e.y),
-                timestamp: Number(e.timestamp)
-            }));
-            settings = response.settings;
-            saveData();
-            saveSett();
-            render();
-            alert("Dados restaurados com sucesso!");
-        } else {
-            alert("A resposta da nuvem veio vazia ou inválida.");
-        }
-        delete window[callbackName];
+    // Timer de segurança: se o Google não responder em 10 segundos, cancela
+    const timeout = setTimeout(() => {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        alert("O Google demorou muito para responder. Tente novamente.");
         document.body.removeChild(script);
+    }, 10000);
+
+    window[callbackName] = function(response) {
+        clearTimeout(timeout); // Cancela o aviso de demora
+        try {
+            if(response && response.entries) {
+                // Processa e limpa os dados recebidos
+                data.entries = response.entries.map(e => ({
+                    id: Number(e.id) || Date.now(),
+                    groupId: e.groupId || null,
+                    type: e.type || 'expense',
+                    value: parseFloat(e.value) || 0,
+                    desc: e.desc || '',
+                    method: e.method || '',
+                    bankId: e.bankId || '',
+                    personId: e.personId || '',
+                    date: e.date || '',
+                    timestamp: Number(e.timestamp) || Date.now(),
+                    m: parseInt(e.m),
+                    y: parseInt(e.y)
+                }));
+
+                settings = response.settings || { banks: {}, people: {} };
+                
+                saveData();
+                saveSett();
+                render();
+                alert("Dados restaurados com sucesso!");
+            } else {
+                alert("A planilha parece estar vazia ou o formato é incompatível.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao processar os dados recebidos da planilha.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+            delete window[callbackName];
+            if (script.parentNode) document.body.removeChild(script);
+        }
     };
+
+    // Monta a URL com Callback e anti-cache
+    const antiCache = Date.now();
+    script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}&t=${antiCache}`;
     
-    script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}`;
-    script.onerror = () => alert("Erro ao carregar dados. Verifique a URL do Script.");
+    script.onerror = function() {
+        clearTimeout(timeout);
+        btn.innerText = originalText;
+        btn.disabled = false;
+        alert("Erro crítico de rede. Verifique se a URL está correta.");
+        if (script.parentNode) document.body.removeChild(script);
+    };
+
     document.body.appendChild(script);
 }
-
 function renderConfig() {
     // Preenche a lista de pessoas
     const personList = document.getElementById('configPersonList');
@@ -467,4 +510,5 @@ function renderConfig() {
     </script>
 </body>
 </html>
+
 
