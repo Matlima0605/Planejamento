@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#191970">
-    <link rel="apple-touch-icon" href="icon.png">
     <title>Nossas Finanças Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -55,7 +54,6 @@
     </nav>
 
     <main class="px-4 max-w-md mx-auto">
-        
         <section id="sec-resumo">
             <div id="historyList" class="space-y-3"></div>
             <div id="emptyState" class="hidden text-center py-20 text-slate-300">
@@ -108,7 +106,7 @@
             <div class="space-y-6">
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
                     <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Sincronização Google</h3>
-                    <input type="text" id="googleUrlInput" placeholder="URL /exec do Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
+                    <input type="text" id="googleUrlInput" placeholder="Cole aqui o URL /exec" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
                     <div class="grid grid-cols-2 gap-3">
                         <button id="btnUpload" onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Enviar Nuvem</button>
                         <button id="btnDownload" onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Baixar Tudo</button>
@@ -134,14 +132,12 @@
     </main>
 
     <script>
-        // --- ESTADO GLOBAL ---
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
         let settings = JSON.parse(localStorage.getItem('fin_settings_v26')) || { banks: {}, people: {} };
         let data = JSON.parse(localStorage.getItem('fin_data_v26')) || { entries: [] };
         let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = 'Débito', editingId = null;
         let editingPersonId = null, editingBankId = null;
 
-        // --- FILTROS DE DATA ---
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
         const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -153,18 +149,15 @@
         function saveData() { localStorage.setItem('fin_data_v26', JSON.stringify(data)); }
         function saveSett() { localStorage.setItem('fin_settings_v26', JSON.stringify(settings)); renderConfig(); }
 
-        // --- NAVEGAÇÃO ---
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
             document.getElementById(target).classList.remove('hidden');
-            
             if(tab === 'ganhos' || tab === 'gastos') {
                 if (!editingId) { currentType = tab === 'ganhos' ? 'income' : 'expense'; resetFormFields(); }
                 setupForm();
             }
             if(tab === 'config') { editingId = null; renderConfig(); }
-            
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.toggle('active-tab', b.id === 'tab-'+tab);
                 b.classList.toggle('text-slate-400', b.id !== 'tab-'+tab);
@@ -172,7 +165,6 @@
             render();
         }
 
-        // --- FORMULÁRIO DE LANÇAMENTOS ---
         function resetFormFields() {
             document.getElementById('entryValue').value = '';
             document.getElementById('entryDesc').value = '';
@@ -273,7 +265,6 @@
             saveData(); showTab('resumo'); resetFormFields();
         }
 
-        // --- RENDERIZAÇÃO ---
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
@@ -314,7 +305,7 @@
             document.getElementById('totalExpense').innerText = `R$ ${exT.toFixed(0)}`;
             const bal = inT - exT;
             document.getElementById('totalBalance').innerText = `R$ ${bal.toFixed(0)}`;
-            document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/20).toFixed(2) : '0,00'}`;
+            document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/30).toFixed(2) : '0,00'}`;
         }
 
         function editEntry(id) {
@@ -343,7 +334,6 @@
             saveData(); render();
         }
 
-        // --- CONFIGURAÇÕES E EDIÇÃO DE BANCOS/PESSOAS ---
         function renderConfig() {
             document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
                 <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1 border border-slate-100">
@@ -407,10 +397,40 @@
         function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
         function deleteBank(id) { if(confirm("Excluir?")) { delete settings.banks[id]; saveSett(); } }
 
-        // --- SISTEMA DE SYNC DEFINITIVO (NATIVO FETCH API) ---
+        // --- SISTEMA UNIVERSAL DE SINCRONIZAÇÃO (DUPLO MOTOR) ---
+        
+        // Função Auxiliar que processa a string que volta do servidor
+        function processSyncData(rawString) {
+            try {
+                // Caso a requisição seja nativa, ela já pode vir como objeto, se vier como string, dá parse.
+                const resData = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
+                
+                if (resData && resData.entries) {
+                    data.entries = resData.entries.map(e => ({
+                        ...e,
+                        id: Number(e.id),
+                        value: parseFloat(e.value),
+                        timestamp: Number(e.timestamp),
+                        m: Number(e.m),
+                        y: Number(e.y)
+                    }));
+                } else {
+                    data.entries = [];
+                }
+                settings = resData.settings || { banks: {}, people: {} };
+                
+                saveData(); 
+                saveSett(); 
+                render();
+                alert("Dados Baixados e Restaurados!");
+            } catch (err) {
+                alert("Falha ao processar os dados da planilha. Tente enviar os dados locais primeiro para corrigir.");
+            }
+        }
+
         async function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
-            if(!url.includes('/exec')) return alert("URL Inválida! Certifique-se de copiar o link inteiro.");
+            if(!url.includes('/exec')) return alert("URL Inválida!");
             
             localStorage.setItem('google_sync_url', url);
             GOOGLE_SCRIPT_URL = url;
@@ -422,17 +442,16 @@
             const payload = JSON.stringify({ entries: data.entries, settings: settings });
 
             try {
-                // Envio nativo text/plain (O Google aceita sem bloquear por CORS)
+                // Envio via Form-UrlEncoded (O formato mais imune a bloqueios Mobile)
                 await fetch(url, {
                     method: 'POST',
-                    body: payload,
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    body: new URLSearchParams({ payload: payload }),
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
-                
                 alert("Dados enviados para a Nuvem com sucesso!");
             } catch(err) {
-                // No mobile, o redirect do POST às vezes cai no catch, mas os dados chegam.
-                alert("Envio processado! Verifique a planilha pelo computador.");
+                // Celulares às vezes bloqueiam a leitura do OK do servidor, mas o envio foi feito.
+                alert("Sincronização processada (Modo Offline). Verifique no PC.");
             } finally {
                 btn.innerText = "Enviar Nuvem"; 
                 btn.disabled = false;
@@ -447,49 +466,40 @@
             btn.innerText = "Baixando..."; 
             btn.disabled = true;
 
+            const resetBtn = () => { btn.innerText = "Baixar Tudo"; btn.disabled = false; };
+
             try {
-                // Download via Fetch API com suporte nativo a CORS do Google
-                // Timestamp adicionado para evitar cache
-                const response = await fetch(`${url}?t=${Date.now()}`, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                if (!response.ok) throw new Error("Falha na comunicação com o servidor.");
-
-                const resData = await response.json();
-
-                if (resData) {
-                    if (resData.entries) {
-                        data.entries = resData.entries.map(e => ({
-                            ...e,
-                            id: Number(e.id),
-                            value: parseFloat(e.value),
-                            timestamp: Number(e.timestamp),
-                            m: Number(e.m),
-                            y: Number(e.y)
-                        }));
-                    } else {
-                        data.entries = [];
-                    }
-                    settings = resData.settings || { banks: {}, people: {} };
-                    
-                    saveData(); 
-                    saveSett(); 
-                    render();
-                    alert("Dados Restaurados da Nuvem com sucesso!");
-                }
-
+                // TENTATIVA 1: O Motor Principal (Fetch API Nativo)
+                const res = await fetch(`${url}?t=${Date.now()}`);
+                if (!res.ok) throw new Error("Erro na rede");
+                const text = await res.text();
+                processSyncData(text);
+                resetBtn();
             } catch (err) {
-                console.error(err);
-                alert("Erro de conexão. Verifique se o link possui a permissão 'Qualquer pessoa'.");
-            } finally {
-                btn.innerText = "Baixar Tudo"; 
-                btn.disabled = false;
+                // TENTATIVA 2: O Motor Secundário de Emergência (Injeção JSONP)
+                // Se o Safari/Mobile Chrome barrar o Fetch por segurança, o JSONP fura o bloqueio.
+                const callbackName = 'syncCb_' + Date.now();
+                
+                window[callbackName] = function(rawString) {
+                    processSyncData(rawString);
+                    delete window[callbackName];
+                    document.getElementById(callbackName).remove();
+                    resetBtn();
+                };
+
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = `${url}?callback=${callbackName}&t=${Date.now()}`;
+                
+                script.onerror = () => { 
+                    alert("Acesso Bloqueado pelo Celular. O Script no Google está marcado como 'Qualquer pessoa'?"); 
+                    resetBtn(); 
+                };
+                
+                document.body.appendChild(script);
             }
         }
 
-        // INICIALIZAÇÃO
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
