@@ -354,42 +354,46 @@
             } catch(e) { alert("Erro ao subir dados."); }
         }
 
-        async function downloadFromCloud() {
-            GOOGLE_SCRIPT_URL = document.getElementById('googleUrlInput').value.trim();
-            if(!GOOGLE_SCRIPT_URL) return alert("Insira a URL!");
-            if(!confirm("Isso apagará os dados locais. Continuar?")) return;
-            try {
-                const res = await fetch(GOOGLE_SCRIPT_URL + '?t=' + Date.now());
-                const cloud = await res.json();
-                if(Array.isArray(cloud)) {
-                    data.entries = cloud.map(e => ({...e, id: Number(e.id), value: parseFloat(e.value), m: parseInt(e.m), y: parseInt(e.y), timestamp: Number(e.timestamp)}));
-                    saveData(); render(); alert("Dados restaurados!");
-                }
-            } catch(e) { alert("Erro ao baixar. Verifique a URL e a publicação do script."); }
-        }
+       async function downloadFromCloud() {
+    GOOGLE_SCRIPT_URL = document.getElementById('googleUrlInput').value.trim();
+    if(!GOOGLE_SCRIPT_URL) return alert("Insira a URL!");
+    if(!confirm("Isso apagará os dados locais e carregará os da nuvem. Continuar?")) return;
 
-        function deleteEntry(id) { if(confirm("Apagar?")) { data.entries = data.entries.filter(e=>e.id!==id); saveData(); render(); } }
-        function saveData() { localStorage.setItem('fin_data_v24', JSON.stringify(data)); }
-        function savePerson() {
-            const n = document.getElementById('personNameInput').value.trim();
-            if(n) { settings.people['p'+Date.now()] = { name: n }; document.getElementById('personNameInput').value = ''; saveSett(); }
-        }
-        function saveBank() {
-            const n = document.getElementById('bankNameInput').value.trim();
-            const c = document.getElementById('bankColorInput').value;
-            if(n) { settings.banks['b'+Date.now()] = { name: n, color: c, init: n[0].toUpperCase() }; document.getElementById('bankNameInput').value = ''; saveSett(); }
-        }
-        function saveSett() { localStorage.setItem('fin_settings_v24', JSON.stringify(settings)); renderConfig(); alert("Salvo!"); }
+    try {
+        // Adicionamos o redirecionamento manual para evitar o bloqueio CORB
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'GET',
+            mode: 'cors', // Força o modo CORS
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const cloud = await response.json();
         
-        function renderConfig() {
-            document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `<div class="flex justify-between p-3 bg-slate-50 rounded-xl text-xs font-bold"><span>${settings.people[id].name}</span><button onclick="delete settings.people['${id}'];saveSett()" class="text-red-400">X</button></div>`).join('');
-            document.getElementById('configBankList').innerHTML = Object.keys(settings.banks).map(id => `<div class="flex justify-between p-3 bg-slate-50 rounded-xl text-xs font-bold border-l-4" style="border-color:${settings.banks[id].color}"><span>${settings.banks[id].name}</span><button onclick="delete settings.banks['${id}'];saveSett()" class="text-red-400">X</button></div>`).join('');
-            document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
+        if(Array.isArray(cloud)) {
+            data.entries = cloud.map(e => ({
+                ...e, 
+                id: Number(e.id), 
+                value: parseFloat(e.value), 
+                m: parseInt(e.m), 
+                y: parseInt(e.y), 
+                timestamp: Number(e.timestamp)
+            }));
+            saveData();
+            render();
+            alert("✅ Dados restaurados com sucesso!");
+        } else {
+            alert("A nuvem retornou um formato inválido.");
         }
+    } catch(e) {
+        console.error(e);
+        alert("Erro de conexão. Verifique se o Script do Google foi implantado como 'Qualquer pessoa'.");
+    }
+}
 
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
 </body>
 </html>
+
 
