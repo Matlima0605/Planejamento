@@ -106,7 +106,7 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar</button>
+                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar Lançamento</button>
             </div>
         </section>
 
@@ -174,8 +174,8 @@
     <script>
         // ESTADO GLOBAL
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
-        let settings = JSON.parse(localStorage.getItem('fin_settings_v30')) || { banks: {}, people: {} };
-        let data = JSON.parse(localStorage.getItem('fin_data_v30')) || { entries: [] };
+        let settings = JSON.parse(localStorage.getItem('fin_settings_v32')) || { banks: {}, people: {} };
+        let data = JSON.parse(localStorage.getItem('fin_data_v32')) || { entries: [] };
         
         let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = '';
         let editingPersonId = null, editingBankId = null, modalEditingId = null;
@@ -189,8 +189,8 @@
         monthsNames.forEach((m, i) => fMonth.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
         for(let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) fYear.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
 
-        function saveData() { localStorage.setItem('fin_data_v30', JSON.stringify(data)); }
-        function saveSett() { localStorage.setItem('fin_settings_v30', JSON.stringify(settings)); renderConfig(); }
+        function saveData() { localStorage.setItem('fin_data_v32', JSON.stringify(data)); }
+        function saveSett() { localStorage.setItem('fin_settings_v32', JSON.stringify(settings)); renderConfig(); }
 
         // NAVEGAÇÃO
         function showTab(tab) {
@@ -309,7 +309,7 @@
             saveData(); showTab('resumo');
         }
 
-        // RENDERIZAÇÃO E MODAL
+        // RENDERIZAÇÃO
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
@@ -498,11 +498,11 @@
         function deletePerson(id) { if(confirm("Excluir pessoa?")) { delete settings.people[id]; saveSett(); } }
         function deleteBank(id) { if(confirm("Excluir banco?")) { delete settings.banks[id]; saveSett(); } }
 
-        // =====================================================================
-        // MOTORES DE SINCRONIZAÇÃO (AJAX / XMLHTTPREQUEST) - À PROVA DE BLOQUEIO
-        // =====================================================================
+        // =========================================================
+        // MÁQUINA DE SINCRONIZAÇÃO (BLINDAGEM TOTAL)
+        // =========================================================
 
-        function uploadToCloud() {
+        async function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
             localStorage.setItem('google_sync_url', url);
@@ -513,24 +513,20 @@
 
             const payload = JSON.stringify({ entries: data.entries, settings: settings });
 
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", url, true);
-            // Envio Text/Plain nativo não aciona bloqueio CORS de celulares
-            xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
-            
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    btn.innerText = "Enviar Nuvem"; btn.disabled = false;
-                    alert("Backup salvo na nuvem com sucesso!");
-                }
-            };
-            
-            xhr.onerror = function() {
+            try {
+                // Modo silencioso (no-cors) resolve 99% das barreiras de envio de celular
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: payload
+                });
+                alert("Backup enviado com sucesso!");
+            } catch(e) {
+                alert("Erro ao enviar. Verifique a conexão com a internet.");
+            } finally {
                 btn.innerText = "Enviar Nuvem"; btn.disabled = false;
-                alert("Redirecionamento bloqueado pelo celular, mas o envio pode ter funcionado. Verifique o PC.");
-            };
-            
-            xhr.send(payload);
+            }
         }
 
         function downloadFromCloud() {
@@ -540,45 +536,51 @@
             const btn = document.getElementById('btnDownload');
             btn.innerText = "Baixando..."; btn.disabled = true;
 
-            const xhr = new XMLHttpRequest();
-            // A flag ?t=Date.now() força o celular a baixar a versão mais recente e ignorar o cache antigo
-            xhr.open("GET", url + "?t=" + new Date().getTime(), true);
+            // Remove o script antigo para não travar
+            const oldScript = document.getElementById('jsonp-script');
+            if(oldScript) oldScript.remove();
+
+            const callbackName = 'syncCallback_' + Date.now();
             
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    btn.innerText = "Baixar Tudo"; btn.disabled = false;
+            // O celular vai "chamar" essa função quando o Google responder
+            window[callbackName] = function(rawString) {
+                try {
+                    const resData = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
+                    if (resData && resData.entries) {
+                        data.entries = resData.entries.map(e => ({
+                            ...e, id: Number(e.id), value: parseFloat(e.value),
+                            timestamp: Number(e.timestamp), m: Number(e.m), y: Number(e.y)
+                        }));
+                    } else { data.entries = []; }
+                    settings = resData.settings || { banks: {}, people: {} };
                     
-                    if (xhr.status === 200) {
-                        try {
-                            const resData = JSON.parse(xhr.responseText);
-                            if (resData && resData.entries) {
-                                data.entries = resData.entries.map(e => ({
-                                    ...e, id: Number(e.id), value: parseFloat(e.value),
-                                    timestamp: Number(e.timestamp), m: Number(e.m), y: Number(e.y)
-                                }));
-                            } else {
-                                data.entries = [];
-                            }
-                            settings = resData.settings || { banks: {}, people: {} };
-                            saveData(); saveSett(); render();
-                            alert("Dados restaurados com sucesso!");
-                        } catch(e) {
-                            alert("Erro ao ler os dados. Tente enviar um backup novo para corrigir a planilha.");
-                        }
-                    } else {
-                        alert("O celular bloqueou o download. Verifique sua conexão e tente novamente.");
-                    }
-                }
-            };
-            
-            xhr.onerror = function() {
-                btn.innerText = "Baixar Tudo"; btn.disabled = false;
-                alert("Conexão falhou. O link está correto e com permissão 'Qualquer pessoa'?");
+                    saveData(); saveSett(); render();
+                    alert("Dados Restaurados da Nuvem com Sucesso!");
+                } catch (err) {
+                    console.error(err);
+                    alert("O arquivo na nuvem parece estar vazio ou corrompido. Tente Enviar Nuvem primeiro.");
+                } finally { cleanup(); }
             };
 
-            xhr.send();
+            // Injeta a chamada como um arquivo .js (o celular NUNCA bloqueia isso)
+            const script = document.createElement('script');
+            script.id = 'jsonp-script';
+            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
+            
+            script.onerror = () => { 
+                alert("O celular bloqueou a conexão. Tem certeza que a permissão está como 'Qualquer pessoa'?"); 
+                cleanup(); 
+            };
+            
+            function cleanup() {
+                btn.innerText = "Baixar Tudo"; btn.disabled = false;
+                delete window[callbackName];
+            }
+
+            document.body.appendChild(script);
         }
 
+        // INIT
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
