@@ -354,40 +354,49 @@
             } catch(e) { alert("Erro ao subir dados."); }
         }
 
-       async function downloadFromCloud() {
+      function downloadFromCloud() {
     GOOGLE_SCRIPT_URL = document.getElementById('googleUrlInput').value.trim();
-    if(!GOOGLE_SCRIPT_URL) return alert("Insira a URL!");
-    if(!confirm("Isso apagará os dados locais e carregará os da nuvem. Continuar?")) return;
+    if (!GOOGLE_SCRIPT_URL) return alert("Insira a URL do Script!");
+    if (!confirm("Isso substituirá seus dados locais pelos da planilha. Continuar?")) return;
 
-    try {
-        // Adicionamos o redirecionamento manual para evitar o bloqueio CORB
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'GET',
-            mode: 'cors', // Força o modo CORS
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const cloud = await response.json();
-        
-        if(Array.isArray(cloud)) {
-            data.entries = cloud.map(e => ({
-                ...e, 
-                id: Number(e.id), 
-                value: parseFloat(e.value), 
-                m: parseInt(e.m), 
-                y: parseInt(e.y), 
+    // Criamos um nome único para a função de retorno
+    const callbackName = 'google_jsonp_' + Date.now();
+    
+    // Criamos o elemento <script> que burlará o bloqueio do Chrome
+    const script = document.createElement('script');
+    
+    // Definimos o que acontece quando os dados chegarem
+    window[callbackName] = function(cloudData) {
+        if (Array.isArray(cloudData)) {
+            data.entries = cloudData.map(e => ({
+                ...e,
+                id: Number(e.id),
+                value: parseFloat(e.value),
+                m: parseInt(e.m),
+                y: parseInt(e.y),
                 timestamp: Number(e.timestamp)
             }));
             saveData();
             render();
-            alert("✅ Dados restaurados com sucesso!");
-        } else {
-            alert("A nuvem retornou um formato inválido.");
+            alert("✅ Dados restaurados com sucesso via Nuvem!");
         }
-    } catch(e) {
-        console.error(e);
-        alert("Erro de conexão. Verifique se o Script do Google foi implantado como 'Qualquer pessoa'.");
-    }
+        // Limpeza: remove o script e a função temporária
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+
+    // Montamos a URL com o parâmetro de callback que o seu novo Google Script entende
+    const sep = GOOGLE_SCRIPT_URL.indexOf('?') > -1 ? '&' : '?';
+    script.src = `${GOOGLE_SCRIPT_URL}${sep}callback=${callbackName}&t=${Date.now()}`;
+    
+    // Tratamento de erro caso o link esteja quebrado
+    script.onerror = () => {
+        alert("Erro crítico de conexão. Verifique se a URL está correta e se o script foi implantado como 'Qualquer pessoa'.");
+        document.body.removeChild(script);
+    };
+
+    // Adicionamos o script à página para disparar a chamada
+    document.body.appendChild(script);
 }
 
         document.getElementById('entryDate').valueAsDate = new Date();
@@ -395,5 +404,6 @@
     </script>
 </body>
 </html>
+
 
 
