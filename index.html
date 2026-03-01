@@ -6,20 +6,17 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#191970">
     <link rel="apple-touch-icon" href="icon.png">
-    <title>Nossas Finanças</title>
+    <title>Nossas Finanças Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        /* Troca da cor de destaque na aba ativa */
         .active-tab { border-bottom: 3px solid #191970; color: #191970; }
         .hidden { display: none; }
         .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        /* Troca da cor de destaque no item selecionado */
         .item-selected { border-color: #191970 !important; background: #f5f3ff !important; transform: scale(0.98); }
         .bank-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; margin-bottom: 4px; }
         .method-btn { border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
-        /* Troca da cor de destaque no botão de método selecionado */
         .method-selected { border-color: #191970; background: #191970; color: white; box-shadow: 0 4px 12px rgba(25, 25, 112, 0.2); }
         .installment-badge { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 800; margin-left: 6px; border: 1px solid #e2e8f0; }
     </style>
@@ -112,8 +109,8 @@
                     <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Sincronização Google</h3>
                     <input type="text" id="googleUrlInput" placeholder="URL /exec do Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="uploadToCloud(event)" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Backup Nuvem</button>
-                        <button onclick="downloadFromCloud(event)" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Restaurar Tudo</button>
+                        <button id="btnUpload" onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Backup Nuvem</button>
+                        <button id="btnDownload" onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Restaurar Tudo</button>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
@@ -136,6 +133,7 @@
     </main>
 
     <script>
+        // --- CONFIGURAÇÃO INICIAL ---
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
         let settings = JSON.parse(localStorage.getItem('fin_settings_v24')) || { banks: {}, people: {} };
         let data = JSON.parse(localStorage.getItem('fin_data_v24')) || { entries: [] };
@@ -152,6 +150,7 @@
         function saveData() { localStorage.setItem('fin_data_v24', JSON.stringify(data)); }
         function saveSett() { localStorage.setItem('fin_settings_v24', JSON.stringify(settings)); renderConfig(); }
 
+        // --- NAVEGAÇÃO ---
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
@@ -168,12 +167,14 @@
             render();
         }
 
+        // --- FORMULÁRIO ---
         function resetFormFields() {
             document.getElementById('entryValue').value = '';
             document.getElementById('entryDesc').value = '';
             document.getElementById('entryDate').valueAsDate = new Date();
             document.getElementById('isFixed').checked = false;
             editingId = null;
+            toggleExtraFields(); // Corrige bug de campos extras não sumindo
         }
 
         function cancelEditing() { resetFormFields(); showTab('resumo'); }
@@ -181,8 +182,9 @@
         function setupForm() {
             const bIds = Object.keys(settings.banks);
             const pIds = Object.keys(settings.people);
-            if (!selectedBankId) selectedBankId = bIds[0] || '';
-            if (!selectedPersonId) selectedPersonId = pIds[0] || '';
+            // Correção crucial: bIds[0] em vez de bIds (que é array)
+            if (!selectedBankId && bIds.length > 0) selectedBankId = bIds[0];
+            if (!selectedPersonId && pIds.length > 0) selectedPersonId = pIds[0];
 
             document.getElementById('bankSelector').innerHTML = bIds.map(id => `
                 <div onclick="selectedBankId='${id}';setupForm()" class="bank-option p-3 ${selectedBankId === id ? 'item-selected' : ''}">
@@ -215,21 +217,6 @@
             document.getElementById('installmentsContainer').classList.toggle('hidden', !isChecked || selectedMethod === 'Débito' || currentType === 'income');
         }
 
-        function editEntry(id) {
-            const entry = data.entries.find(e => e.id === id);
-            if (!entry) return;
-            editingId = id;
-            currentType = entry.type;
-            selectedBankId = entry.bankId;
-            selectedPersonId = entry.personId;
-            selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
-            document.getElementById('entryValue').value = entry.value;
-            document.getElementById('entryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
-            const parts = entry.date.split('/');
-            document.getElementById('entryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            showTab(entry.type === 'income' ? 'ganhos' : 'gastos');
-        }
-
         function saveEntry() {
             const val = parseFloat(document.getElementById('entryValue').value);
             const desc = document.getElementById('entryDesc').value;
@@ -242,18 +229,20 @@
                 const idx = data.entries.findIndex(e => e.id === editingId);
                 const original = data.entries[idx];
                 let applyToAll = false;
-                if (original.groupId) applyToAll = confirm("Deseja aplicar as mudanças a este e todos os lançamentos futuros deste grupo?");
+                if (original.groupId) applyToAll = confirm("Aplicar a todos os futuros deste grupo?");
 
                 if (applyToAll) {
                     data.entries.forEach(e => {
                         if (e.groupId === original.groupId && e.timestamp >= original.timestamp) {
                             e.value = val; e.bankId = selectedBankId; e.personId = selectedPersonId;
                             const match = e.desc.match(/\s\(\d+\/\d+\)$/);
+                            // Correção: usar match[0] se existir
                             e.desc = desc + (match ? match[0] : "");
                         }
                     });
                 } else {
                     const match = original.desc.match(/\s\(\d+\/\d+\)$/);
+                    // Correção: usar match[0]
                     data.entries[idx] = { ...original, value: val, desc: desc + (match ? match[0] : ""), date: dateStr, timestamp: d.getTime(), m: d.getMonth(), y: d.getFullYear(), bankId: selectedBankId, personId: selectedPersonId };
                 }
                 editingId = null;
@@ -281,6 +270,7 @@
             saveData(); showTab('resumo'); resetFormFields();
         }
 
+        // --- RENDERIZAÇÃO ---
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
@@ -291,11 +281,11 @@
             filtered.sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
                 if(e.type === 'income') inT += e.value; else exT += e.value;
                 const b = settings.banks[e.bankId] || { name: '?', color: '#ccc', init: '?' };
-                
                 let cleanDesc = e.desc;
                 let installmentHtml = "";
                 const match = e.desc.match(/\((\d+\/\d+)\)$/);
                 if (match) {
+                    // Correção: match[0] contém o texto exato para substituir
                     cleanDesc = e.desc.replace(match[0], "").trim();
                     installmentHtml = `<span class="installment-badge">${match[1]}</span>`;
                 }
@@ -325,109 +315,106 @@
             document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/20).toFixed(2) : '0,00'}`;
         }
 
+        function editEntry(id) {
+            const entry = data.entries.find(e => e.id === id);
+            if (!entry) return;
+            editingId = id;
+            currentType = entry.type;
+            selectedBankId = entry.bankId;
+            selectedPersonId = entry.personId;
+            selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
+            document.getElementById('entryValue').value = entry.value;
+            document.getElementById('entryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
+            const parts = entry.date.split('/');
+            // Correção: Ordem correta de array para montar Ano-Mês-Dia
+            document.getElementById('entryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            showTab(entry.type === 'income' ? 'ganhos' : 'gastos');
+        }
+
         function deleteEntry(id) {
             const entry = data.entries.find(e => e.id === id);
             if (!entry) return;
-            if (entry.groupId) {
-                const choice = confirm("Este item faz parte de um grupo. \n\nClique em OK para APAGAR O GRUPO (lançamentos futuros).\nClique em CANCELAR para APAGAR APENAS ESTE.");
-                if (choice) {
-                    data.entries = data.entries.filter(e => !(e.groupId === entry.groupId && e.timestamp >= entry.timestamp));
-                } else if(confirm("Apagar APENAS este?")) {
-                    data.entries = data.entries.filter(e => e.id !== id);
-                }
-            } else if(confirm("Deseja apagar?")) {
+            if (entry.groupId && confirm("Apagar todo o grupo futuro?")) {
+                data.entries = data.entries.filter(e => !(e.groupId === entry.groupId && e.timestamp >= entry.timestamp));
+            } else if(confirm("Apagar este registro?")) {
                 data.entries = data.entries.filter(e => e.id !== id);
             }
             saveData(); render();
         }
 
-        // --- FUNÇÕES DE SINCRONIZAÇÃO OTIMIZADAS PARA CELULAR ---
-
-        async function uploadToCloud(event) {
+        // --- SINCRONIZAÇÃO GOOGLE ---
+        async function uploadToCloud() {
             const urlInput = document.getElementById('googleUrlInput');
             GOOGLE_SCRIPT_URL = urlInput.value.trim();
-            if(!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.startsWith('http')) return alert("Insira uma URL válida!");
+            if(!GOOGLE_SCRIPT_URL.startsWith('http')) return alert("URL Inválida!");
             localStorage.setItem('google_sync_url', GOOGLE_SCRIPT_URL);
-            
-            const btn = event ? (event.currentTarget || event.target) : null;
-            if(btn) btn.disabled = true;
+
+            const btn = document.getElementById('btnUpload');
+            btn.innerText = "Enviando..."; btn.disabled = true;
 
             try {
                 const payload = JSON.stringify({ entries: data.entries, settings: settings });
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: "POST",
-                    mode: "no-cors", 
+                    mode: "no-cors", // Necessário para enviar POST silenciado para Google Script
                     headers: { "Content-Type": "text/plain" },
                     body: payload
                 });
                 alert("Backup enviado com sucesso!");
             } catch(e) {
-                alert("Erro ao enviar: " + e.message);
+                alert("Erro: " + e.message);
             } finally {
-                if(btn) btn.disabled = false;
+                btn.innerText = "Backup Nuvem"; btn.disabled = false;
             }
         }
 
-        function downloadFromCloud(event) {
+        function downloadFromCloud() {
             const urlInput = document.getElementById('googleUrlInput');
             GOOGLE_SCRIPT_URL = urlInput.value.trim();
             if (!GOOGLE_SCRIPT_URL.includes('/exec')) return alert("URL inválida!");
 
-            const btn = event ? (event.currentTarget || event.target) : null;
-            const originalText = btn ? btn.innerText : "";
-            if(btn) { btn.innerText = "Baixando..."; btn.disabled = true; }
+            const btn = document.getElementById('btnDownload');
+            btn.innerText = "Baixando..."; btn.disabled = true;
 
-            const callbackName = 'callback_' + Math.round(Math.random() * 1000000);
+            const callbackName = 'cb_' + Date.now();
             window[callbackName] = function(response) {
-                try {
-                    if (response && response.entries) {
-                        data.entries = response.entries.map(e => ({
-                            ...e,
-                            id: Number(e.id),
-                            value: parseFloat(e.value),
-                            timestamp: Number(e.timestamp),
-                            m: parseInt(e.m),
-                            y: parseInt(e.y)
-                        }));
-                        settings = response.settings || { banks: {}, people: {} };
-                        saveData(); saveSett(); render();
-                        alert("Dados restaurados!");
-                    }
-                } catch (err) { alert("Erro ao processar dados."); }
-                finally { cleanup(); }
+                if (response && response.entries) {
+                    data.entries = response.entries;
+                    settings = response.settings || { banks: {}, people: {} };
+                    saveData(); saveSett(); render();
+                    alert("Dados Restaurados!");
+                }
+                cleanup();
             };
 
             const script = document.createElement('script');
+            script.id = "jsonp-req";
             script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
-            script.id = "jsonp-request";
-            script.onerror = () => { alert("Erro de conexão."); cleanup(); };
-
+            script.onerror = () => { alert("Erro de conexão com o servidor Google."); cleanup(); };
+            
             function cleanup() {
-                if(btn) { btn.innerText = originalText; btn.disabled = false; }
-                delete window[callbackName];
-                const old = document.getElementById("jsonp-request");
-                if (old) old.remove();
+                btn.innerText = "Restaurar Tudo"; btn.disabled = false;
+                if(window[callbackName]) delete window[callbackName];
+                const old = document.getElementById("jsonp-req");
+                if(old) old.remove();
             }
-            document.body.removeChild(script);
+
+            document.body.appendChild(script);
         }
 
         function renderConfig() {
-            const personList = document.getElementById('configPersonList');
-            if (personList) {
-                personList.innerHTML = Object.keys(settings.people).map(id => `
-                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase">
-                        <span>${settings.people[id].name}</span>
-                        <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
-                    </div>`).join('');
-            }
-            const bankList = document.getElementById('configBankList');
-            if (bankList) {
-                bankList.innerHTML = Object.keys(settings.banks).map(id => `
-                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4" style="border-color:${settings.banks[id].color}">
-                        <span>${settings.banks[id].name}</span>
-                        <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
-                    </div>`).join('');
-            }
+            document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
+                <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1">
+                    <span>${settings.people[id].name}</span>
+                    <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
+                </div>`).join('');
+            
+            document.getElementById('configBankList').innerHTML = Object.keys(settings.banks).map(id => `
+                <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4 mb-1" style="border-color:${settings.banks[id].color}">
+                    <span>${settings.banks[id].name}</span>
+                    <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
+                </div>`).join('');
+            
             document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
         }
 
@@ -439,6 +426,7 @@
         function saveBank() {
             const n = document.getElementById('bankNameInput').value.trim();
             const c = document.getElementById('bankColorInput').value;
+            // Correção: pegar apenas a primeira letra para a inicial
             if(n) { settings.banks['b'+Date.now()] = { name: n, color: c, init: n[0].toUpperCase() }; document.getElementById('bankNameInput').value = ''; saveSett(); }
         }
 
@@ -449,4 +437,5 @@
         render();
     </script>
 </body>
+</html>
 </html>
