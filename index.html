@@ -13,16 +13,13 @@
         .active-tab { border-bottom: 3px solid #191970; color: #191970; }
         .hidden { display: none !important; }
         
-        /* Opções Selecionáveis */
         .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px;}
         .item-selected { border-color: #191970 !important; background: #f5f3ff !important; transform: scale(0.95); }
         .bank-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; margin-bottom: 4px; }
         
-        /* Botões Método */
         .method-btn { border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
         .method-selected { border-color: #191970; background: #191970; color: white; box-shadow: 0 4px 12px rgba(25, 25, 112, 0.2); }
         
-        /* Badges */
         .installment-badge { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 800; margin-left: 6px; border: 1px solid #e2e8f0; }
         .pending-badge { background: #fff7ed; color: #ea580c; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 900; margin-left: 6px; border: 1px solid #fed7aa; text-transform: uppercase;}
     </style>
@@ -61,7 +58,6 @@
     </nav>
 
     <main class="px-4 max-w-md mx-auto">
-        
         <section id="sec-resumo">
             <div id="historyList" class="space-y-3"></div>
             <div id="emptyState" class="hidden text-center py-20 text-slate-300">
@@ -110,7 +106,7 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar Lançamento</button>
+                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar</button>
             </div>
         </section>
 
@@ -175,18 +171,16 @@
         </div>
     </div>
 
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
     <script>
-        // --- ESTADO GLOBAL ---
+        // ESTADO GLOBAL
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
-        let settings = JSON.parse(localStorage.getItem('fin_settings_v27')) || { banks: {}, people: {} };
-        let data = JSON.parse(localStorage.getItem('fin_data_v27')) || { entries: [] };
+        let settings = JSON.parse(localStorage.getItem('fin_settings_v30')) || { banks: {}, people: {} };
+        let data = JSON.parse(localStorage.getItem('fin_data_v30')) || { entries: [] };
+        
         let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = '';
         let editingPersonId = null, editingBankId = null, modalEditingId = null;
-        let currentFilter = 'all'; // 'all', 'income', 'expense'
+        let currentFilter = 'all';
 
-        // --- FILTROS DE DATA ---
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
         const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -195,10 +189,10 @@
         monthsNames.forEach((m, i) => fMonth.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
         for(let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) fYear.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
 
-        function saveData() { localStorage.setItem('fin_data_v27', JSON.stringify(data)); }
-        function saveSett() { localStorage.setItem('fin_settings_v27', JSON.stringify(settings)); renderConfig(); }
+        function saveData() { localStorage.setItem('fin_data_v30', JSON.stringify(data)); }
+        function saveSett() { localStorage.setItem('fin_settings_v30', JSON.stringify(settings)); renderConfig(); }
 
-        // --- NAVEGAÇÃO ---
+        // NAVEGAÇÃO
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
@@ -220,15 +214,11 @@
 
         function setFilter(type) {
             currentFilter = (currentFilter === type) ? 'all' : type;
-            
-            // Controle visual de opacidade dos Cards
             document.getElementById('cardIncome').style.opacity = (currentFilter === 'all' || currentFilter === 'income') ? '1' : '0.4';
             document.getElementById('cardExpense').style.opacity = (currentFilter === 'all' || currentFilter === 'expense') ? '1' : '0.4';
-            
             render();
         }
 
-        // --- FORMULÁRIO DE CRIAÇÃO ---
         function resetFormFields() {
             document.getElementById('entryValue').value = '';
             document.getElementById('entryDesc').value = '';
@@ -236,10 +226,7 @@
             document.getElementById('isFixed').checked = false;
             document.getElementById('isPaidToggle').checked = true;
             
-            // Zera as opções para obrigar o usuário a escolher
-            selectedBankId = ''; 
-            selectedPersonId = ''; 
-            selectedMethod = '';
+            selectedBankId = ''; selectedPersonId = ''; selectedMethod = '';
             toggleExtraFields();
         }
 
@@ -249,13 +236,7 @@
             const selectedDate = new Date(dateStr + 'T12:00:00');
             const today = new Date();
             today.setHours(0,0,0,0);
-            
-            // Se data for no futuro, desmarca o "Pago" automaticamente
-            if(selectedDate > today) {
-                document.getElementById('isPaidToggle').checked = false;
-            } else {
-                document.getElementById('isPaidToggle').checked = true;
-            }
+            document.getElementById('isPaidToggle').checked = selectedDate <= today;
         }
 
         function setupForm() {
@@ -295,7 +276,6 @@
             const desc = document.getElementById('entryDesc').value;
             const dateInput = document.getElementById('entryDate').value;
             
-            // Validação Severa
             if(!val || !desc || !dateInput) return alert("Preencha o Valor e Descrição!");
             if(!selectedBankId) return alert("Por favor, selecione Onde (Banco).");
             if(!selectedPersonId) return alert("Por favor, selecione Quem (Pessoa).");
@@ -326,34 +306,29 @@
                     timestamp: future.getTime(), m: future.getMonth(), y: future.getFullYear()
                 });
             }
-            
             saveData(); showTab('resumo');
         }
 
-        // --- RENDERIZAÇÃO DA LISTA ---
+        // RENDERIZAÇÃO E MODAL
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
             
-            // Todos do Mês (Para os Cards de Total)
             const monthEntries = data.entries.filter(e => Number(e.m) === selM && Number(e.y) === selY);
             monthEntries.forEach(e => { if(e.type === 'income') inT += e.value; else exT += e.value; });
             
-            // Atualiza Cards
             document.getElementById('totalIncome').innerText = `R$ ${inT.toFixed(0)}`;
             document.getElementById('totalExpense').innerText = `R$ ${exT.toFixed(0)}`;
             const bal = inT - exT;
             document.getElementById('totalBalance').innerText = `R$ ${bal.toFixed(0)}`;
             document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/30).toFixed(2) : '0,00'}`;
 
-            // Entradas Filtradas (Para a Lista Visual)
             const list = document.getElementById('historyList'); list.innerHTML = '';
             const filteredList = monthEntries.filter(e => currentFilter === 'all' || e.type === currentFilter);
             document.getElementById('emptyState').classList.toggle('hidden', filteredList.length > 0);
             
             filteredList.sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
                 const b = settings.banks[e.bankId] || { name: '?', color: '#ccc', init: '?' };
-                
                 let cleanDesc = e.desc;
                 let installmentHtml = "";
                 const match = e.desc.match(/\((\d+\/\d+)\)$/);
@@ -362,14 +337,11 @@
                     installmentHtml = `<span class="installment-badge">${match[1]}</span>`;
                 }
 
-                // Lógica Visual de Pendente/Pago
                 let statusBadge = "";
-                let textColor = e.type === 'income' ? 'text-emerald-500' : 'text-slate-800'; // Vermelho removido para dar destaque ao Pendente
-                if (e.type === 'expense') {
-                    if (e.isPaid === false) {
-                        statusBadge = `<span class="pending-badge">Pendente</span>`;
-                        textColor = 'text-orange-500';
-                    }
+                let textColor = e.type === 'income' ? 'text-emerald-500' : 'text-slate-800';
+                if (e.type === 'expense' && e.isPaid === false) {
+                    statusBadge = `<span class="pending-badge">Pendente</span>`;
+                    textColor = 'text-orange-500';
                 }
 
                 list.innerHTML += `
@@ -392,24 +364,20 @@
             });
         }
 
-        // --- JANELA FLUTUANTE (MODAL DE EDIÇÃO) ---
         function openEditModal(id) {
             const e = data.entries.find(x => x.id === id);
             if (!e) return;
             modalEditingId = id;
 
-            // Preenche Data
             const p = e.date.split('/');
             document.getElementById('modDate').value = `${p[2]}-${p[1]}-${p[0]}`;
-            
-            // Preenche Valor e Desc
             document.getElementById('modValue').value = e.value;
+            
             let cleanDesc = e.desc;
             const match = e.desc.match(/\s\(\d+\/\d+\)$/);
             if(match) cleanDesc = e.desc.replace(match[0], '');
             document.getElementById('modDesc').value = cleanDesc;
 
-            // Popula os Selects de Banco e Pessoa
             const modBank = document.getElementById('modBank');
             modBank.innerHTML = Object.keys(settings.banks).map(bId => `<option value="${bId}">${settings.banks[bId].name}</option>`).join('');
             modBank.value = e.bankId;
@@ -418,16 +386,14 @@
             modPerson.innerHTML = Object.keys(settings.people).map(pId => `<option value="${pId}">${settings.people[pId].name}</option>`).join('');
             modPerson.value = e.personId;
 
-            // Lida com Método e Status (Apenas para despesas)
             const modMethod = document.getElementById('modMethod');
             const modPaidContainer = document.getElementById('modPaidContainer');
             
             if (e.type === 'expense') {
                 modMethod.classList.remove('hidden');
                 modMethod.value = e.method === 'Crédito' ? 'Crédito' : 'Débito';
-                
                 modPaidContainer.classList.remove('hidden');
-                document.getElementById('modIsPaid').checked = e.isPaid !== false; // Se undefined, assume true
+                document.getElementById('modIsPaid').checked = e.isPaid !== false;
             } else {
                 modMethod.classList.add('hidden');
                 modPaidContainer.classList.add('hidden');
@@ -484,7 +450,6 @@
                     bankId: bId, personId: pId, method: method, isPaid: isPaid
                 };
             }
-
             saveData(); render(); closeEditModal();
         }
 
@@ -499,7 +464,6 @@
             saveData(); render();
         }
 
-        // --- CONFIGURAÇÕES (PESSOAS/BANCOS) ---
         function renderConfig() {
             document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
                 <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1 border border-slate-100">
@@ -512,7 +476,6 @@
                     <span onclick="editBank('${id}')" class="flex-1 cursor-pointer ml-2">${settings.banks[id].name} ✏️</span>
                     <button onclick="deleteBank('${id}')" class="text-red-400 ml-2 px-2">X</button>
                 </div>`).join('');
-            
             document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
         }
 
@@ -532,11 +495,14 @@
             document.getElementById('bankNameInput').value = ''; saveSett();
         }
 
-        function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
-        function deleteBank(id) { if(confirm("Excluir?")) { delete settings.banks[id]; saveSett(); } }
+        function deletePerson(id) { if(confirm("Excluir pessoa?")) { delete settings.people[id]; saveSett(); } }
+        function deleteBank(id) { if(confirm("Excluir banco?")) { delete settings.banks[id]; saveSett(); } }
 
-        // --- SISTEMA UNIVERSAL DE SINCRONIZAÇÃO (MOBILE OK) ---
-        async function uploadToCloud() {
+        // =====================================================================
+        // MOTORES DE SINCRONIZAÇÃO (AJAX / XMLHTTPREQUEST) - À PROVA DE BLOQUEIO
+        // =====================================================================
+
+        function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
             localStorage.setItem('google_sync_url', url);
@@ -547,19 +513,24 @@
 
             const payload = JSON.stringify({ entries: data.entries, settings: settings });
 
-            try {
-                // Envio Form-URL Encoded (Inquebrável no Celular)
-                await fetch(url, {
-                    method: 'POST',
-                    body: new URLSearchParams({ payload: payload }),
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-                alert("Dados enviados para a Nuvem com sucesso!");
-            } catch(err) {
-                alert("Sincronização processada. Verifique na planilha do PC.");
-            } finally {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            // Envio Text/Plain nativo não aciona bloqueio CORS de celulares
+            xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    btn.innerText = "Enviar Nuvem"; btn.disabled = false;
+                    alert("Backup salvo na nuvem com sucesso!");
+                }
+            };
+            
+            xhr.onerror = function() {
                 btn.innerText = "Enviar Nuvem"; btn.disabled = false;
-            }
+                alert("Redirecionamento bloqueado pelo celular, mas o envio pode ter funcionado. Verifique o PC.");
+            };
+            
+            xhr.send(payload);
         }
 
         function downloadFromCloud() {
@@ -569,37 +540,45 @@
             const btn = document.getElementById('btnDownload');
             btn.innerText = "Baixando..."; btn.disabled = true;
 
-            const callbackName = 'syncCb_' + Date.now();
-            window[callbackName] = function(rawString) {
-                try {
-                    const resData = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
-                    if (resData && resData.entries) {
-                        data.entries = resData.entries.map(e => ({
-                            ...e, id: Number(e.id), value: parseFloat(e.value),
-                            timestamp: Number(e.timestamp), m: Number(e.m), y: Number(e.y)
-                        }));
-                    } else { data.entries = []; }
-                    settings = resData.settings || { banks: {}, people: {} };
-                    saveData(); saveSett(); render();
-                    alert("Dados Baixados e Restaurados!");
-                } catch(e) { alert("Erro ao processar dados da nuvem."); }
-                
-                delete window[callbackName];
-                document.getElementById(callbackName).remove();
+            const xhr = new XMLHttpRequest();
+            // A flag ?t=Date.now() força o celular a baixar a versão mais recente e ignorar o cache antigo
+            xhr.open("GET", url + "?t=" + new Date().getTime(), true);
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    btn.innerText = "Baixar Tudo"; btn.disabled = false;
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            const resData = JSON.parse(xhr.responseText);
+                            if (resData && resData.entries) {
+                                data.entries = resData.entries.map(e => ({
+                                    ...e, id: Number(e.id), value: parseFloat(e.value),
+                                    timestamp: Number(e.timestamp), m: Number(e.m), y: Number(e.y)
+                                }));
+                            } else {
+                                data.entries = [];
+                            }
+                            settings = resData.settings || { banks: {}, people: {} };
+                            saveData(); saveSett(); render();
+                            alert("Dados restaurados com sucesso!");
+                        } catch(e) {
+                            alert("Erro ao ler os dados. Tente enviar um backup novo para corrigir a planilha.");
+                        }
+                    } else {
+                        alert("O celular bloqueou o download. Verifique sua conexão e tente novamente.");
+                    }
+                }
+            };
+            
+            xhr.onerror = function() {
                 btn.innerText = "Baixar Tudo"; btn.disabled = false;
+                alert("Conexão falhou. O link está correto e com permissão 'Qualquer pessoa'?");
             };
 
-            const script = document.createElement('script');
-            script.id = callbackName;
-            script.src = `${url}?callback=${callbackName}&t=${Date.now()}`;
-            script.onerror = () => { 
-                alert("Acesso Bloqueado. O Script no Google está marcado como 'Qualquer pessoa'?"); 
-                btn.innerText = "Baixar Tudo"; btn.disabled = false;
-            };
-            document.body.appendChild(script);
+            xhr.send();
         }
 
-        // INIT
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
