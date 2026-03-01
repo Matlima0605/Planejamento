@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#191970">
+    <link rel="apple-touch-icon" href="icon.png">
     <title>Nossas Finanças Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,151 +13,155 @@
         body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         .active-tab { border-bottom: 3px solid #191970; color: #191970; }
         .hidden { display: none; }
-        .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px; }
-        .item-selected { border-color: #191970 !important; background: #f5f3ff !important; }
-        .bank-avatar { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 10px; margin-bottom: 2px; }
-        .method-btn { border: 2px solid #e2e8f0; padding: 10px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-        .method-selected { border-color: #191970; background: #191970; color: white; }
+        .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px;}
+        .item-selected { border-color: #191970 !important; background: #f5f3ff !important; transform: scale(0.98); }
+        .bank-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; margin-bottom: 4px; }
+        .method-btn { border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
+        .method-selected { border-color: #191970; background: #191970; color: white; box-shadow: 0 4px 12px rgba(25, 25, 112, 0.2); }
+        .installment-badge { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 800; margin-left: 6px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-50 pb-24 text-slate-900">
 
-    <div id="loader" class="hidden fixed inset-0 bg-black/50 z-[100] flex items-center justify-center text-white font-bold uppercase text-xs">
-        <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl">Processando...</div>
-    </div>
-
     <header class="bg-white p-6 rounded-b-[2.5rem] shadow-sm mb-4 text-center border-b border-slate-100">
-        <div class="flex justify-center gap-2 mb-3">
-            <select id="filterMonth" onchange="render()" class="font-bold text-indigo-600 bg-slate-50 px-3 py-1 rounded-full outline-none text-[10px] border border-slate-100"></select>
-            <select id="filterYear" onchange="render()" class="font-bold text-indigo-600 bg-slate-50 px-3 py-1 rounded-full outline-none text-[10px] border border-slate-100"></select>
+        <div class="flex justify-center gap-4 mb-3">
+            <select id="filterMonth" onchange="render()" class="font-bold text-indigo-600 bg-slate-50 px-3 py-1 rounded-full outline-none uppercase text-[10px] tracking-wider border border-slate-100"></select>
+            <select id="filterYear" onchange="render()" class="font-bold text-indigo-600 bg-slate-50 px-3 py-1 rounded-full outline-none uppercase text-[10px] tracking-wider border border-slate-100"></select>
         </div>
-        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">Gasto Diário Livre</p>
-        <h1 id="dailyLimit" class="text-4xl font-extrabold text-slate-800">R$ 0,00</h1>
+        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-[0.2em] mb-1">Sugestão de Gasto Diário</p>
+        <h1 id="dailyLimit" class="text-4xl font-extrabold tracking-tight text-slate-800">R$ 0,00</h1>
     </header>
 
     <div class="px-4 grid grid-cols-3 gap-3 mb-6 max-w-md mx-auto">
-        <div class="bg-white p-3 rounded-2xl border text-center">
-            <p class="text-[8px] font-bold text-slate-400 uppercase">Ganhos</p>
-            <span id="totalIncome" class="text-[11px] font-extrabold text-emerald-600">R$ 0</span>
+        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Entradas</p>
+            <span id="totalIncome" class="text-xs font-extrabold text-emerald-600">R$ 0</span>
         </div>
-        <div class="bg-white p-3 rounded-2xl border text-center">
-            <p class="text-[8px] font-bold text-slate-400 uppercase">Gastos</p>
-            <span id="totalExpense" class="text-[11px] font-extrabold text-red-500">R$ 0</span>
+        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-center">
+            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Saídas</p>
+            <span id="totalExpense" class="text-xs font-extrabold text-red-500">R$ 0</span>
         </div>
-        <div class="p-3 rounded-2xl shadow-md text-center bg-[#191970]">
-            <p class="text-[8px] font-bold text-indigo-200 uppercase">Saldo</p>
-            <span id="totalBalance" class="text-[11px] font-extrabold text-white">R$ 0</span>
+        <div class="p-3 rounded-2xl shadow-md text-center" style="background-color: #191970;">
+            <p class="text-[9px] font-bold text-indigo-200 uppercase mb-1">Saldo</p>
+            <span id="totalBalance" class="text-xs font-extrabold text-white">R$ 0</span>
         </div>
     </div>
 
     <nav class="flex justify-around mb-4 bg-white shadow-sm border-b sticky top-0 z-20">
-        <button onclick="showTab('resumo')" id="tab-resumo" class="p-4 active-tab font-extrabold text-[10px] uppercase">Resumo</button>
-        <button onclick="showTab('ganhos')" id="tab-ganhos" class="p-4 font-extrabold text-[10px] uppercase text-slate-400">Ganhos</button>
-        <button onclick="showTab('gastos')" id="tab-gastos" class="p-4 font-extrabold text-[10px] uppercase text-slate-400">Gastos</button>
-        <button onclick="showTab('config')" id="tab-config" class="p-4 font-extrabold text-[10px] uppercase text-slate-400">⚙️</button>
+        <button onclick="showTab('resumo')" id="tab-resumo" class="p-4 active-tab font-extrabold text-[10px] uppercase tracking-widest">Resumo</button>
+        <button onclick="showTab('ganhos')" id="tab-ganhos" class="p-4 font-extrabold text-[10px] uppercase tracking-widest text-slate-400">Receber</button>
+        <button onclick="showTab('gastos')" id="tab-gastos" class="p-4 font-extrabold text-[10px] uppercase tracking-widest text-slate-400">Gastar</button>
+        <button onclick="showTab('config')" id="tab-config" class="p-4 font-extrabold text-[10px] uppercase tracking-widest text-slate-400">⚙️</button>
     </nav>
 
     <main class="px-4 max-w-md mx-auto">
         <section id="sec-resumo">
             <div id="historyList" class="space-y-3"></div>
-            <div id="emptyState" class="hidden text-center py-20 text-slate-300 uppercase text-[10px] font-bold tracking-widest">Nenhum registro encontrado</div>
+            <div id="emptyState" class="hidden text-center py-20 text-slate-300">
+                <p class="text-xs font-bold uppercase tracking-widest">Nenhum registro</p>
+            </div>
         </section>
 
         <section id="sec-form" class="hidden">
-            <div class="bg-white p-6 rounded-[2rem] shadow-xl border">
-                <h2 id="formTitle" class="text-lg font-extrabold mb-6 text-center uppercase">Novo Registro</h2>
+            <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
+                <h2 id="formTitle" class="text-xl font-extrabold mb-6 text-center uppercase tracking-tighter">Novo Lançamento</h2>
                 
-                <label class="text-[9px] font-extrabold uppercase text-slate-400">Pessoa</label>
+                <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Quem?</label>
                 <div id="personSelector" class="grid grid-cols-3 gap-2 mb-4 mt-1"></div>
                 
-                <label class="text-[9px] font-extrabold uppercase text-slate-400">Banco / Conta</label>
+                <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Onde?</label>
                 <div id="bankSelector" class="grid grid-cols-3 gap-2 mb-4 mt-1"></div>
                 
-                <div id="methodSection" class="mb-4">
-                    <label class="text-[9px] font-extrabold uppercase text-slate-400">Forma</label>
+                <div id="methodSectionContainer" class="mb-4">
+                    <label class="text-[9px] font-extrabold uppercase text-slate-400 ml-1">Como?</label>
                     <div class="flex gap-2 mt-1">
-                        <button onclick="selectMethod('Débito')" id="btn-debito" class="method-btn">Débito</button>
+                        <button onclick="selectMethod('Débito')" id="btn-debito" class="method-btn">Débito / Pix</button>
                         <button onclick="selectMethod('Crédito')" id="btn-credito" class="method-btn">Crédito</button>
                     </div>
                 </div>
 
                 <div class="space-y-4">
-                    <input type="date" id="entryDate" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-200">
-                    <input type="number" id="entryValue" inputmode="decimal" placeholder="R$ 0,00" class="w-full p-4 bg-slate-50 rounded-2xl text-2xl font-extrabold text-indigo-600 outline-none">
-                    <input type="text" id="entryDesc" placeholder="Descrição (Ex: Mercado)" class="w-full p-4 bg-slate-50 rounded-2xl font-semibold outline-none">
+                    <input type="date" id="entryDate" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none">
+                    <input type="number" id="entryValue" inputmode="decimal" placeholder="Valor R$ 0,00" class="w-full p-4 bg-slate-50 rounded-2xl text-2xl font-extrabold text-indigo-600 outline-none">
+                    <input type="text" id="entryDesc" placeholder="Descrição" class="w-full p-4 bg-slate-50 rounded-2xl font-semibold outline-none">
                     
                     <div id="recurringOptions" class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                         <div class="flex items-center justify-between">
-                            <label class="text-[10px] font-extrabold uppercase text-slate-500">Repetir registro?</label>
-                            <input type="checkbox" id="isFixed" onchange="toggleExtraFields()" class="w-5 h-5 accent-indigo-600">
+                            <label class="text-[10px] font-extrabold uppercase text-slate-500">Repetir / Parcelar?</label>
+                            <input type="checkbox" id="isFixed" onchange="toggleExtraFields()" class="w-5 h-5">
                         </div>
-                        <div id="fixedMonthsContainer" class="hidden mt-3"><input type="number" id="repeatMonths" placeholder="Nº de meses" class="w-full p-3 rounded-xl border outline-none"></div>
-                        <div id="installmentsContainer" class="hidden mt-3"><input type="number" id="numInstallments" placeholder="Nº de parcelas" class="w-full p-3 rounded-xl border outline-none"></div>
+                        <div id="fixedMonthsContainer" class="hidden mt-3">
+                            <input type="number" id="repeatMonths" placeholder="Meses de repetição" class="w-full p-3 rounded-xl border outline-none">
+                        </div>
+                        <div id="installmentsContainer" class="hidden mt-3">
+                            <input type="number" id="numInstallments" placeholder="Número de parcelas" class="w-full p-3 rounded-xl border outline-none">
+                        </div>
                     </div>
                 </div>
-                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 uppercase shadow-lg" id="btnSave">Salvar</button>
-                <button id="btnCancelEdit" onclick="cancelEditing()" class="hidden w-full text-slate-400 py-3 font-bold text-[10px] uppercase">Cancelar</button>
+                <button onclick="saveEntry()" class="w-full text-white py-5 rounded-2xl font-extrabold mt-8 shadow-lg uppercase" id="btnSave">Confirmar</button>
+                <button id="btnCancelEdit" onclick="cancelEditing()" class="hidden w-full text-slate-400 py-3 font-bold text-[10px] uppercase mt-2">Cancelar Edição</button>
             </div>
         </section>
 
         <section id="sec-config" class="hidden">
-            <div class="space-y-4">
-                <div class="bg-white p-6 rounded-3xl border">
-                    <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Backup Google Sheets</h3>
-                    <input type="text" id="googleUrlInput" placeholder="URL /exec do App Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border">
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Sincronização Google</h3>
+                    <input type="text" id="googleUrlInput" placeholder="URL /exec do Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Enviar Nuvem</button>
-                        <button onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Baixar Nuvem</button>
+                        <button id="btnUpload" onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Enviar Nuvem</button>
+                        <button id="btnDownload" onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Baixar Tudo</button>
                     </div>
                 </div>
-
-                <div class="bg-white p-6 rounded-3xl border">
-                    <h3 class="font-extrabold mb-2 text-[10px] uppercase text-indigo-600">👥 Gerenciar Pessoas</h3>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">👥 Pessoas</h3>
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="personNameInput" placeholder="Nome" class="flex-1 p-3 bg-slate-100 rounded-xl text-xs outline-none">
-                        <button onclick="savePerson()" id="btnSavePerson" class="bg-indigo-500 text-white px-4 rounded-xl font-bold text-xs uppercase">Ok</button>
+                        <input type="text" id="personNameInput" placeholder="Nome" class="flex-1 p-3 bg-slate-100 rounded-xl text-sm outline-none">
+                        <button id="btnSavePerson" onclick="savePerson()" class="bg-indigo-500 text-white px-4 rounded-xl font-bold text-xs uppercase">OK</button>
                     </div>
-                    <div id="configPersonList" class="space-y-1"></div>
+                    <div class="space-y-2" id="configPersonList"></div>
                 </div>
-
-                <div class="bg-white p-6 rounded-3xl border">
-                    <h3 class="font-extrabold mb-2 text-[10px] uppercase text-indigo-600">🏦 Gerenciar Bancos</h3>
-                    <input type="text" id="bankNameInput" placeholder="Nome do Banco" class="w-full p-3 bg-slate-100 rounded-xl text-xs mb-2 outline-none">
-                    <input type="color" id="bankColorInput" value="#191970" class="w-full h-8 mb-2 rounded-lg border-none">
-                    <button onclick="saveBank()" id="btnSaveBank" class="w-full bg-indigo-500 text-white py-2 rounded-xl font-bold text-xs uppercase">Salvar Banco</button>
-                    <div id="configBankList" class="space-y-1 mt-4"></div>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">🏦 Bancos</h3>
+                    <input type="text" id="bankNameInput" placeholder="Nome Banco" class="w-full p-3 bg-slate-100 rounded-xl text-sm mb-2 outline-none">
+                    <input type="color" id="bankColorInput" value="#191970" class="w-full h-8 mb-2 cursor-pointer border-none rounded">
+                    <button id="btnSaveBank" onclick="saveBank()" class="w-full bg-indigo-500 text-white py-2 rounded-xl font-bold text-xs uppercase">Salvar Banco</button>
+                    <div class="space-y-2 mt-4" id="configBankList"></div>
                 </div>
             </div>
         </section>
     </main>
 
-    <form id="hiddenSyncForm" target="hiddenFrame" method="POST" class="hidden">
-        <input type="hidden" name="payload" id="hiddenPayload">
-    </form>
-    <iframe name="hiddenFrame" class="hidden"></iframe>
-
     <script>
-        let settings = JSON.parse(localStorage.getItem('fin_v25_sett')) || { banks: {}, people: {} };
-        let data = JSON.parse(localStorage.getItem('fin_v25_data')) || { entries: [] };
+        // ESTADO GLOBAL
+        let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
+        let settings = JSON.parse(localStorage.getItem('fin_settings_v26')) || { banks: {}, people: {} };
+        let data = JSON.parse(localStorage.getItem('fin_data_v26')) || { entries: [] };
         let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = 'Débito', editingId = null;
         let editingPersonId = null, editingBankId = null;
 
+        // FILTROS DE DATA
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
-        const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-        const d = new Date();
-        months.forEach((m,i)=>fMonth.innerHTML+=`<option value="${i}" ${i===d.getMonth()?'selected':''}>${m}</option>`);
-        for(let y=d.getFullYear()-1;y<=d.getFullYear()+2;y++) fYear.innerHTML+=`<option value="${y}" ${y===d.getFullYear()?'selected':''}>${y}</option>`;
+        const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const now = new Date();
 
-        function saveData() { localStorage.setItem('fin_v25_data', JSON.stringify(data)); }
-        function saveSett() { localStorage.setItem('fin_v25_sett', JSON.stringify(settings)); renderConfig(); }
+        monthsNames.forEach((m, i) => fMonth.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
+        for(let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) fYear.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
 
+        function saveData() { localStorage.setItem('fin_data_v26', JSON.stringify(data)); }
+        function saveSett() { localStorage.setItem('fin_settings_v26', JSON.stringify(settings)); renderConfig(); }
+
+        // NAVEGAÇÃO
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-            const target = tab==='config'?'sec-config':(tab==='resumo'?'sec-resumo':'sec-form');
+            const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
             document.getElementById(target).classList.remove('hidden');
-            if(tab==='ganhos'||tab==='gastos') { if(!editingId){currentType=tab==='ganhos'?'income':'expense'; resetFormFields();} setupForm(); }
-            if(tab==='config') renderConfig();
+            if(tab === 'ganhos' || tab === 'gastos') {
+                if (!editingId) { currentType = tab === 'ganhos' ? 'income' : 'expense'; resetFormFields(); }
+                setupForm();
+            }
+            if(tab === 'config') { editingId = null; renderConfig(); }
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.toggle('active-tab', b.id === 'tab-'+tab);
                 b.classList.toggle('text-slate-400', b.id !== 'tab-'+tab);
@@ -162,93 +169,141 @@
             render();
         }
 
+        // FORMULÁRIO LANÇAMENTOS
         function resetFormFields() {
-            document.getElementById('entryValue').value=''; document.getElementById('entryDesc').value='';
-            document.getElementById('entryDate').valueAsDate=new Date(); document.getElementById('isFixed').checked=false;
-            editingId=null; toggleExtraFields();
+            document.getElementById('entryValue').value = '';
+            document.getElementById('entryDesc').value = '';
+            document.getElementById('entryDate').valueAsDate = new Date();
+            document.getElementById('isFixed').checked = false;
+            editingId = null;
+            toggleExtraFields();
         }
+
+        function cancelEditing() { resetFormFields(); showTab('resumo'); }
 
         function setupForm() {
-            const bIds = Object.keys(settings.banks), pIds = Object.keys(settings.people);
-            if(!selectedBankId && bIds.length) selectedBankId = bIds[0];
-            if(!selectedPersonId && pIds.length) selectedPersonId = pIds[0];
+            const bIds = Object.keys(settings.banks);
+            const pIds = Object.keys(settings.people);
+            if (!selectedBankId && bIds.length > 0) selectedBankId = bIds[0];
+            if (!selectedPersonId && pIds.length > 0) selectedPersonId = pIds[0];
 
             document.getElementById('bankSelector').innerHTML = bIds.map(id => `
-                <div onclick="selectedBankId='${id}';setupForm()" class="bank-option p-2 ${selectedBankId===id?'item-selected':''}">
-                    <div class="bank-avatar" style="background-color:${settings.banks[id].color}">${settings.banks[id].init}</div>
-                    <span class="text-[7px] font-bold uppercase text-slate-500">${settings.banks[id].name}</span>
-                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Crie Bancos na aba ⚙️</p>';
+                <div onclick="selectedBankId='${id}';setupForm()" class="bank-option p-3 ${selectedBankId === id ? 'item-selected' : ''}">
+                    <div class="bank-avatar" style="background-color: ${settings.banks[id].color}">${settings.banks[id].init}</div>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase">${settings.banks[id].name}</span>
+                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Bancos em ⚙️</p>';
 
             document.getElementById('personSelector').innerHTML = pIds.map(id => `
-                <div onclick="selectedPersonId='${id}';setupForm()" class="person-option p-2 text-[8px] font-bold uppercase ${selectedPersonId===id?'item-selected':''}">
+                <div onclick="selectedPersonId='${id}';setupForm()" class="person-option p-3 text-[9px] font-bold uppercase ${selectedPersonId === id ? 'item-selected' : ''}">
                     ${settings.people[id].name}
-                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Crie Pessoas na aba ⚙️</p>';
+                </div>`).join('') || '<p class="col-span-3 text-[9px] text-center p-4">Cadastre Pessoas em ⚙️</p>';
 
-            document.getElementById('methodSection').classList.toggle('hidden', currentType==='income');
-            document.getElementById('btn-debito').className = `method-btn ${selectedMethod==='Débito'?'method-selected':''}`;
-            document.getElementById('btn-credito').className = `method-btn ${selectedMethod==='Crédito'?'method-selected':''}`;
-            document.getElementById('btnSave').style.backgroundColor = currentType==='income'?'#10b981':'#ef4444';
-            document.getElementById('btnSave').innerText = editingId?'Atualizar':'Confirmar';
+            document.getElementById('methodSectionContainer').classList.toggle('hidden', currentType === 'income');
+            document.getElementById('btn-debito').className = `method-btn ${selectedMethod === 'Débito' ? 'method-selected' : ''}`;
+            document.getElementById('btn-credito').className = `method-btn ${selectedMethod === 'Crédito' ? 'method-selected' : ''}`;
+            
+            const btn = document.getElementById('btnSave');
+            btn.style.backgroundColor = currentType === 'income' ? '#10b981' : '#ef4444';
+            btn.innerText = editingId ? "Atualizar" : "Confirmar";
+            document.getElementById('btnCancelEdit').classList.toggle('hidden', !editingId);
+            document.getElementById('formTitle').innerText = editingId ? "Editando" : "Novo Lançamento";
+            document.getElementById('recurringOptions').classList.toggle('hidden', !!editingId);
+            toggleExtraFields();
         }
 
-        function selectMethod(m) { selectedMethod=m; setupForm(); }
+        function selectMethod(m) { selectedMethod = m; setupForm(); }
         function toggleExtraFields() {
             const isChecked = document.getElementById('isFixed').checked;
-            document.getElementById('fixedMonthsContainer').classList.toggle('hidden', !isChecked || selectedMethod==='Crédito');
-            document.getElementById('installmentsContainer').classList.toggle('hidden', !isChecked || selectedMethod==='Débito' || currentType==='income');
+            document.getElementById('fixedMonthsContainer').classList.toggle('hidden', !isChecked || selectedMethod === 'Crédito');
+            document.getElementById('installmentsContainer').classList.toggle('hidden', !isChecked || selectedMethod === 'Débito' || currentType === 'income');
         }
 
         function saveEntry() {
-            const val = parseFloat(document.getElementById('entryValue').value), desc = document.getElementById('entryDesc').value, dateInput = document.getElementById('entryDate').value;
-            if(!val || !desc || !dateInput) return alert("Preencha todos os campos!");
-            const d = new Date(dateInput + 'T12:00:00'), dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+            const val = parseFloat(document.getElementById('entryValue').value);
+            const desc = document.getElementById('entryDesc').value;
+            const dateInput = document.getElementById('entryDate').value;
+            if(!val || !desc || !dateInput) return alert("Preencha tudo!");
+            
+            const d = new Date(dateInput + 'T12:00:00');
+            const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
-            if(editingId) {
-                const idx = data.entries.findIndex(e=>e.id===editingId);
-                data.entries[idx] = {...data.entries[idx], value:val, desc:desc, date:dateStr, timestamp:d.getTime(), m:d.getMonth(), y:d.getFullYear(), bankId:selectedBankId, personId:selectedPersonId};
-                editingId=null;
-            } else {
-                let loops = 1, vLoop = val;
-                if(document.getElementById('isFixed').checked) {
-                    if(selectedMethod==='Crédito') { loops = parseInt(document.getElementById('numInstallments').value)||1; vLoop = val/loops; }
-                    else { loops = parseInt(document.getElementById('repeatMonths').value)||1; }
+            if (editingId) {
+                const idx = data.entries.findIndex(e => e.id === editingId);
+                const original = data.entries[idx];
+                let applyToAll = false;
+                if (original.groupId) applyToAll = confirm("Aplicar as mudanças a todos os futuros deste grupo?");
+
+                if (applyToAll) {
+                    data.entries.forEach(e => {
+                        if (e.groupId === original.groupId && e.timestamp >= original.timestamp) {
+                            e.value = val; e.bankId = selectedBankId; e.personId = selectedPersonId;
+                            const match = e.desc.match(/\s\(\d+\/\d+\)$/);
+                            e.desc = desc + (match ? match[0] : "");
+                        }
+                    });
+                } else {
+                    const match = original.desc.match(/\s\(\d+\/\d+\)$/);
+                    data.entries[idx] = { ...original, value: val, desc: desc + (match ? match[0] : ""), date: dateStr, timestamp: d.getTime(), m: d.getMonth(), y: d.getFullYear(), bankId: selectedBankId, personId: selectedPersonId };
                 }
-                const gId = loops>1?'g'+Date.now():null;
-                for(let i=0; i<loops; i++) {
-                    const f = new Date(d); f.setMonth(d.getMonth()+i);
+                editingId = null;
+            } else {
+                let loops = 1, valPerLoop = val;
+                if (document.getElementById('isFixed').checked) {
+                    if (selectedMethod === 'Crédito' && currentType === 'expense') {
+                        loops = parseInt(document.getElementById('numInstallments').value) || 1;
+                        valPerLoop = val / loops;
+                    } else { loops = parseInt(document.getElementById('repeatMonths').value) || 1; }
+                }
+                const gId = loops > 1 ? 'g' + Date.now() : null;
+                for (let i = 0; i < loops; i++) {
+                    const future = new Date(d); future.setMonth(d.getMonth() + i);
                     data.entries.push({
-                        id: Date.now()+i, groupId: gId, type: currentType, value: vLoop, desc: loops>1?`${desc} (${i+1}/${loops})`:desc,
-                        bankId: selectedBankId, personId: selectedPersonId, method: currentType==='income'?'Recebido':selectedMethod,
-                        date: `${String(f.getDate()).padStart(2,'0')}/${String(f.getMonth()+1).padStart(2,'0')}/${f.getFullYear()}`,
-                        timestamp: f.getTime(), m: f.getMonth(), y: f.getFullYear()
+                        id: Date.now() + i, groupId: gId, type: currentType, value: valPerLoop,
+                        desc: loops > 1 ? `${desc} (${i+1}/${loops})` : desc,
+                        bankId: selectedBankId, personId: selectedPersonId,
+                        method: currentType === 'income' ? 'Recebido' : selectedMethod,
+                        date: `${String(future.getDate()).padStart(2,'0')}/${String(future.getMonth()+1).padStart(2,'0')}/${future.getFullYear()}`,
+                        timestamp: future.getTime(), m: future.getMonth(), y: future.getFullYear()
                     });
                 }
             }
-            saveData(); showTab('resumo');
+            saveData(); showTab('resumo'); resetFormFields();
         }
 
+        // RENDERIZAÇÃO
         function render() {
-            const sm = parseInt(fMonth.value), sy = parseInt(fYear.value);
-            let inT=0, exT=0;
+            const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
+            let inT = 0, exT = 0;
             const list = document.getElementById('historyList'); list.innerHTML = '';
-            const filtered = data.entries.filter(e => Number(e.m) === sm && Number(e.y) === sy);
+            const filtered = data.entries.filter(e => Number(e.m) === selM && Number(e.y) === selY);
             document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
             
-            filtered.sort((a,b)=>b.timestamp - a.timestamp).forEach(e => {
-                if(e.type==='income') inT+=e.value; else exT+=e.value;
-                const b = settings.banks[e.bankId] || {name:'?', color:'#ccc', init:'?'};
+            filtered.sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
+                if(e.type === 'income') inT += e.value; else exT += e.value;
+                const b = settings.banks[e.bankId] || { name: '?', color: '#ccc', init: '?' };
+                let cleanDesc = e.desc;
+                let installmentHtml = "";
+                const match = e.desc.match(/\((\d+\/\d+)\)$/);
+                if (match) {
+                    cleanDesc = e.desc.replace(match[0], "").trim();
+                    installmentHtml = `<span class="installment-badge">${match[1]}</span>`;
+                }
+
                 list.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center active:scale-95 transition-transform" onclick="editEntry(${e.id})">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-[10px]" style="background-color:${b.color}">${b.init}</div>
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-[10px]" style="background-color: ${b.color}">${b.init}</div>
                             <div>
-                                <p class="font-extrabold text-slate-800 text-[10px] uppercase">${e.desc}</p>
-                                <p class="text-[7px] font-bold text-slate-400 uppercase">${e.date} • ${b.name}</p>
+                                <div class="flex items-center">
+                                    <p class="font-extrabold text-slate-800 text-[10px] uppercase tracking-tight">${cleanDesc}</p>
+                                    ${installmentHtml}
+                                </div>
+                                <p class="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">${e.date} • ${b.name}</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <p class="font-black text-xs ${e.type==='income'?'text-emerald-500':'text-red-500'}">R$ ${e.value.toFixed(2)}</p>
-                            <button onclick="event.stopPropagation(); deleteEntry(${e.id})" class="text-[7px] text-slate-300 font-bold uppercase">Apagar</button>
+                        <div class="text-right flex flex-col items-end">
+                            <p class="font-black text-xs ${e.type === 'income' ? 'text-emerald-500' : 'text-red-500'}">R$ ${e.value.toFixed(2)}</p>
+                            <button onclick="event.stopPropagation(); deleteEntry(${e.id})" class="text-[7px] text-slate-300 font-bold uppercase mt-1">Apagar</button>
                         </div>
                     </div>`;
             });
@@ -256,100 +311,170 @@
             document.getElementById('totalExpense').innerText = `R$ ${exT.toFixed(0)}`;
             const bal = inT - exT;
             document.getElementById('totalBalance').innerText = `R$ ${bal.toFixed(0)}`;
-            document.getElementById('dailyLimit').innerText = `R$ ${bal>0?(bal/30).toFixed(2):'0,00'}`;
+            document.getElementById('dailyLimit').innerText = `R$ ${bal > 0 ? (bal/20).toFixed(2) : '0,00'}`;
         }
 
         function editEntry(id) {
-            const e = data.entries.find(x=>x.id===id); if(!e) return;
-            editingId=id; currentType=e.type; selectedBankId=e.bankId; selectedPersonId=e.personId;
-            document.getElementById('entryValue').value=e.value; document.getElementById('entryDesc').value=e.desc;
-            const p = e.date.split('/'); document.getElementById('entryDate').value=`${p[2]}-${p[1]}-${p[0]}`;
-            showTab(e.type==='income'?'ganhos':'gastos');
+            const entry = data.entries.find(e => e.id === id);
+            if (!entry) return;
+            editingId = id;
+            currentType = entry.type;
+            selectedBankId = entry.bankId;
+            selectedPersonId = entry.personId;
+            selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
+            document.getElementById('entryValue').value = entry.value;
+            document.getElementById('entryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
+            const parts = entry.date.split('/');
+            document.getElementById('entryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            showTab(entry.type === 'income' ? 'ganhos' : 'gastos');
         }
 
-        function deleteEntry(id) { if(confirm("Apagar este registro?")) { data.entries=data.entries.filter(x=>x.id!==id); saveData(); render(); } }
+        function deleteEntry(id) {
+            const entry = data.entries.find(e => e.id === id);
+            if (!entry) return;
+            if (entry.groupId && confirm("Apagar todo o grupo futuro?")) {
+                data.entries = data.entries.filter(e => !(e.groupId === entry.groupId && e.timestamp >= entry.timestamp));
+            } else if(confirm("Apagar APENAS este registro?")) {
+                data.entries = data.entries.filter(e => e.id !== id);
+            }
+            saveData(); render();
+        }
 
+        // CONFIGURAÇÕES (PESSOAS/BANCOS)
         function renderConfig() {
             document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
-                <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[9px] font-bold uppercase mb-1">
-                    <span onclick="editPerson('${id}')" class="flex-1">${settings.people[id].name} ✏️</span>
-                    <button onclick="deletePerson('${id}')" class="text-red-400 px-2">X</button>
+                <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1 border border-slate-100">
+                    <span onclick="editPerson('${id}')" class="flex-1 cursor-pointer">${settings.people[id].name} ✏️</span>
+                    <button onclick="deletePerson('${id}')" class="text-red-400 ml-2 px-2">X</button>
                 </div>`).join('');
+            
             document.getElementById('configBankList').innerHTML = Object.keys(settings.banks).map(id => `
-                <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[9px] font-bold uppercase border-l-4 mb-1" style="border-color:${settings.banks[id].color}">
-                    <span onclick="editBank('${id}')" class="flex-1 ml-2">${settings.banks[id].name} ✏️</span>
-                    <button onclick="deleteBank('${id}')" class="text-red-400 px-2">X</button>
+                <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4 mb-1" style="border-color:${settings.banks[id].color}">
+                    <span onclick="editBank('${id}')" class="flex-1 cursor-pointer ml-2">${settings.banks[id].name} ✏️</span>
+                    <button onclick="deleteBank('${id}')" class="text-red-400 ml-2 px-2">X</button>
                 </div>`).join('');
-            document.getElementById('googleUrlInput').value = localStorage.getItem('google_sync_url') || "";
+            
+            document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
+        }
+
+        function editPerson(id) {
+            editingPersonId = id;
+            document.getElementById('personNameInput').value = settings.people[id].name;
+            document.getElementById('btnSavePerson').innerText = "Atualizar";
         }
 
         function savePerson() {
-            const n = document.getElementById('personNameInput').value.trim(); if(!n) return;
-            if(editingPersonId) { settings.people[editingPersonId].name=n; editingPersonId=null; document.getElementById('btnSavePerson').innerText="Ok"; }
-            else { settings.people['p'+Date.now()] = {name:n}; }
-            document.getElementById('personNameInput').value=''; saveSett();
+            const n = document.getElementById('personNameInput').value.trim();
+            if(!n) return;
+            if (editingPersonId) {
+                settings.people[editingPersonId].name = n;
+                editingPersonId = null;
+                document.getElementById('btnSavePerson').innerText = "OK";
+            } else {
+                settings.people['p' + Date.now()] = { name: n };
+            }
+            document.getElementById('personNameInput').value = '';
+            saveSett();
         }
-        function editPerson(id) { editingPersonId=id; document.getElementById('personNameInput').value=settings.people[id].name; document.getElementById('btnSavePerson').innerText="ALT"; }
-        function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
+
+        function editBank(id) {
+            editingBankId = id;
+            document.getElementById('bankNameInput').value = settings.banks[id].name;
+            document.getElementById('bankColorInput').value = settings.banks[id].color;
+            document.getElementById('btnSaveBank').innerText = "ATUALIZAR";
+        }
 
         function saveBank() {
-            const n = document.getElementById('bankNameInput').value.trim(), c = document.getElementById('bankColorInput').value; if(!n) return;
-            if(editingBankId) { settings.banks[editingBankId]={name:n, color:c, init:n[0].toUpperCase()}; editingBankId=null; document.getElementById('btnSaveBank').innerText="Salvar Banco"; }
-            else { settings.banks['b'+Date.now()] = {name:n, color:c, init:n[0].toUpperCase()}; }
-            document.getElementById('bankNameInput').value=''; saveSett();
+            const n = document.getElementById('bankNameInput').value.trim();
+            const c = document.getElementById('bankColorInput').value;
+            if(!n) return;
+            if (editingBankId) {
+                settings.banks[editingBankId].name = n;
+                settings.banks[editingBankId].color = c;
+                settings.banks[editingBankId].init = n[0].toUpperCase();
+                editingBankId = null;
+                document.getElementById('btnSaveBank').innerText = "Salvar Banco";
+            } else {
+                settings.banks['b' + Date.now()] = { name: n, color: c, init: n[0].toUpperCase() };
+            }
+            document.getElementById('bankNameInput').value = '';
+            saveSett();
         }
-        function editBank(id) { editingBankId=id; document.getElementById('bankNameInput').value=settings.banks[id].name; document.getElementById('bankColorInput').value=settings.banks[id].color; document.getElementById('btnSaveBank').innerText="Alterar"; }
+
+        function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
         function deleteBank(id) { if(confirm("Excluir?")) { delete settings.banks[id]; saveSett(); } }
 
-        // --- SISTEMA DE SYNC MOBILE (INFALÍVEL) ---
-        function uploadToCloud() {
+        // --- GOOGLE SYNC (MÉTODO DEFINITIVO PC/MOBILE) ---
+        async function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
             localStorage.setItem('google_sync_url', url);
+            GOOGLE_SCRIPT_URL = url;
 
-            document.getElementById('loader').classList.remove('hidden');
-            const form = document.getElementById('hiddenSyncForm');
-            const payloadInput = document.getElementById('hiddenPayload');
-            
-            form.action = url;
-            payloadInput.value = JSON.stringify({ entries: data.entries, settings: settings });
-            
-            form.submit();
+            const btn = document.getElementById('btnUpload');
+            btn.innerText = "Enviando..."; btn.disabled = true;
 
-            // Como o form envia para um iframe oculto, não temos "resposta" direta.
-            // Avisamos o usuário para checar após 3 segundos.
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('hidden');
-                alert("Sincronização enviada! Verifique sua planilha.");
-            }, 3000);
+            const payload = JSON.stringify({ entries: data.entries, settings: settings });
+
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors', // Evita bloqueio do navegador mobile
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: payload
+                });
+                alert("Dados enviados para a Nuvem!");
+            } catch(err) {
+                alert("Erro ao enviar: " + err.message);
+            } finally {
+                btn.innerText = "Enviar Nuvem"; btn.disabled = false;
+            }
         }
 
         function downloadFromCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
+
+            const btn = document.getElementById('btnDownload');
+            btn.innerText = "Baixando..."; btn.disabled = true;
+
+            const callbackName = 'syncCallback_' + Date.now();
             
-            document.getElementById('loader').classList.remove('hidden');
-            const callbackName = 'cb' + Date.now();
-            
-            window[callbackName] = function(res) {
-                if(res) {
-                    data.entries = res.entries || [];
-                    settings = res.settings || {banks:{}, people:{}};
+            window[callbackName] = function(response) {
+                if(response) {
+                    // Garante que os números cheguem como números para evitar erros de cálculo
+                    if (response.entries) {
+                        data.entries = response.entries.map(e => ({
+                            ...e,
+                            id: Number(e.id),
+                            value: parseFloat(e.value),
+                            timestamp: Number(e.timestamp),
+                            m: Number(e.m),
+                            y: Number(e.y)
+                        }));
+                    } else {
+                        data.entries = [];
+                    }
+                    settings = response.settings || { banks: {}, people: {} };
                     saveData(); saveSett(); render();
-                    alert("Dados restaurados da nuvem!");
+                    alert("Dados Restaurados da Nuvem!");
                 }
-                document.getElementById('jsonp-script').remove();
-                delete window[callbackName];
-                document.getElementById('loader').classList.add('hidden');
+                cleanup();
             };
 
             const script = document.createElement('script');
             script.id = 'jsonp-script';
-            script.src = `${url}?callback=${callbackName}&t=${Date.now()}`;
-            script.onerror = () => { 
-                alert("Erro ao baixar. Verifique a URL."); 
-                document.getElementById('loader').classList.add('hidden');
-            };
+            // Usa JSONP para não ser barrado por CORS no download
+            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
+            script.onerror = () => { alert("Erro de conexão. Verifique a URL do Google Script."); cleanup(); };
+            
+            function cleanup() {
+                btn.innerText = "Baixar Tudo"; btn.disabled = false;
+                delete window[callbackName];
+                const s = document.getElementById('jsonp-script');
+                if(s) s.remove();
+            }
+
             document.body.appendChild(script);
         }
 
