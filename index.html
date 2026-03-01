@@ -343,47 +343,110 @@
         }
 
         // Funções Cloud e Config (Mantidas)
-        async function uploadToCloud() {
-            GOOGLE_SCRIPT_URL = document.getElementById('googleUrlInput').value.trim();
-            if(!GOOGLE_SCRIPT_URL) return alert("URL!");
-            localStorage.setItem('google_sync_url', GOOGLE_SCRIPT_URL);
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({entries: data.entries, settings: settings}) });
-                alert("Backup OK!");
-            } catch(e) { alert("Erro backup."); }
-        }
+      async function uploadToCloud(event) {
+    // 1. Garantir que pegamos a URL correta
+    const urlInput = document.getElementById('googleUrlInput');
+    GOOGLE_SCRIPT_URL = urlInput.value.trim();
+    
+    if(!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.startsWith('http')) {
+        return alert("Por favor, insira uma URL válida do Google Script!");
+    }
+    
+    localStorage.setItem('google_sync_url', GOOGLE_SCRIPT_URL);
+    
+    // 2. Feedback visual usando o evento de clique
+    const btn = event ? event.currentTarget : document.querySelector('button[onclick*="uploadToCloud"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Enviando...";
+    btn.disabled = true;
 
-        function downloadFromCloud() {
-            GOOGLE_SCRIPT_URL = document.getElementById('googleUrlInput').value.trim();
-            if (!GOOGLE_SCRIPT_URL) return alert("URL!");
-            const callbackName = 'jsonp_' + Date.now();
-            const script = document.createElement('script');
-            window[callbackName] = function(response) {
-                if(response.entries && response.settings) {
-                    data.entries = response.entries.map(e => ({ ...e, id: Number(e.id), value: parseFloat(e.value), m: parseInt(e.m), y: parseInt(e.y), timestamp: Number(e.timestamp) }));
-                    settings = response.settings;
-                    saveData(); saveSett(); render(); alert("Restaurado!");
-                }
-                delete window[callbackName];
-                document.body.removeChild(script);
-            };
-            script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}`;
-            document.body.appendChild(script);
-        }
+    try {
+        const payload = JSON.stringify({
+            entries: data.entries,
+            settings: settings
+        });
 
-        function renderConfig() {
-            document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
-                <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase">
-                    <span>${settings.people[id].name}</span>
-                    <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
-                </div>`).join('');
-            document.getElementById('configBankList').innerHTML = Object.keys(settings.banks).map(id => `
-                <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4" style="border-color:${settings.banks[id].color}">
-                    <span>${settings.banks[id].name}</span>
-                    <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
-                </div>`).join('');
-            document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
+        // 3. O Fetch otimizado para Google Apps Script
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors", // Necessário para evitar erro de redirecionamento do Google
+            headers: {
+                "Content-Type": "text/plain", // Usamos text/plain para evitar o pré-vôo do CORS
+            },
+            body: payload
+        });
+
+        alert("Backup enviado! Verifique sua planilha em instantes.");
+    } catch(e) {
+        console.error("Erro no upload:", e);
+        alert("Falha na conexão. Verifique sua internet.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Removida a chave extra que estava aqui
+
+function downloadFromCloud() {
+    const urlInput = document.getElementById('googleUrlInput');
+    GOOGLE_SCRIPT_URL = urlInput.value.trim();
+    if (!GOOGLE_SCRIPT_URL) return alert("URL necessária para download!");
+    
+    const callbackName = 'jsonp_' + Date.now();
+    const script = document.createElement('script');
+    
+    window[callbackName] = function(response) {
+        if(response && response.entries && response.settings) {
+            // Garante que os números e datas sejam interpretados corretamente
+            data.entries = response.entries.map(e => ({
+                ...e,
+                id: Number(e.id),
+                value: parseFloat(e.value),
+                m: parseInt(e.m),
+                y: parseInt(e.y),
+                timestamp: Number(e.timestamp)
+            }));
+            settings = response.settings;
+            saveData();
+            saveSett();
+            render();
+            alert("Dados restaurados com sucesso!");
+        } else {
+            alert("A resposta da nuvem veio vazia ou inválida.");
         }
+        delete window[callbackName];
+        document.body.removeChild(script);
+    };
+    
+    script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}`;
+    script.onerror = () => alert("Erro ao carregar dados. Verifique a URL do Script.");
+    document.body.appendChild(script);
+}
+
+function renderConfig() {
+    // Preenche a lista de pessoas
+    const personList = document.getElementById('configPersonList');
+    if (personList) {
+        personList.innerHTML = Object.keys(settings.people).map(id => `
+            <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase">
+                <span>${settings.people[id].name}</span>
+                <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
+            </div>`).join('');
+    }
+
+    // Preenche a lista de bancos
+    const bankList = document.getElementById('configBankList');
+    if (bankList) {
+        bankList.innerHTML = Object.keys(settings.banks).map(id => `
+            <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4" style="border-color:${settings.banks[id].color}">
+                <span>${settings.banks[id].name}</span>
+                <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
+            </div>`).join('');
+    }
+    
+    document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
+}
 
         function savePerson() {
             const n = document.getElementById('personNameInput').value.trim();
@@ -404,3 +467,4 @@
     </script>
 </body>
 </html>
+
