@@ -11,14 +11,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .active-tab { border-bottom: 3px solid #8A05BE; color: #8A05BE; }
+        /* Troca da cor de destaque na aba ativa */
+        .active-tab { border-bottom: 3px solid #191970; color: #191970; }
         .hidden { display: none; }
         .bank-option, .person-option { border: 2px solid #f1f5f9; cursor: pointer; transition: 0.2s; border-radius: 12px; background: white; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .item-selected { border-color: #8A05BE !important; background: #f5f3ff !important; transform: scale(0.98); }
+        /* Troca da cor de destaque no item selecionado */
+        .item-selected { border-color: #191970 !important; background: #f5f3ff !important; transform: scale(0.98); }
         .bank-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; margin-bottom: 4px; }
         .method-btn { border: 2px solid #e2e8f0; padding: 12px; border-radius: 12px; width: 100%; font-weight: 800; color: #64748b; font-size: 11px; text-transform: uppercase; transition: 0.2s; }
-        .method-selected { border-color: #8A05BE; background: #8A05BE; color: white; box-shadow: 0 4px 12px rgba(138, 5, 190, 0.2); }
-        /* Estilo para a badge da parcela */
+        /* Troca da cor de destaque no botão de método selecionado */
+        .method-selected { border-color: #191970; background: #191970; color: white; box-shadow: 0 4px 12px rgba(25, 25, 112, 0.2); }
         .installment-badge { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 6px; font-size: 8px; font-weight: 800; margin-left: 6px; border: 1px solid #e2e8f0; }
     </style>
 </head>
@@ -42,7 +44,7 @@
             <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Saídas</p>
             <span id="totalExpense" class="text-xs font-extrabold text-red-500">R$ 0</span>
         </div>
-        <div class="bg-indigo-600 p-3 rounded-2xl shadow-md text-center" style="background-color: #8A05BE;">
+        <div class="p-3 rounded-2xl shadow-md text-center" style="background-color: #191970;">
             <p class="text-[9px] font-bold text-indigo-200 uppercase mb-1">Saldo</p>
             <span id="totalBalance" class="text-xs font-extrabold text-white">R$ 0</span>
         </div>
@@ -110,8 +112,8 @@
                     <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">☁️ Sincronização Google</h3>
                     <input type="text" id="googleUrlInput" placeholder="URL /exec do Script" class="w-full p-3 bg-slate-50 rounded-xl text-[10px] mb-4 outline-none border border-slate-100">
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="uploadToCloud()" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Backup Nuvem</button>
-                        <button onclick="downloadFromCloud()" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Restaurar Tudo</button>
+                        <button onclick="uploadToCloud(event)" class="bg-slate-800 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Backup Nuvem</button>
+                        <button onclick="downloadFromCloud(event)" class="bg-emerald-600 text-white p-4 rounded-2xl text-[9px] font-bold uppercase">Restaurar Tudo</button>
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
@@ -125,7 +127,7 @@
                 <div class="bg-white p-6 rounded-3xl border shadow-sm">
                     <h3 class="font-extrabold mb-4 text-[10px] uppercase text-indigo-600 tracking-widest">🏦 Bancos</h3>
                     <input type="text" id="bankNameInput" placeholder="Nome Banco" class="w-full p-3 bg-slate-100 rounded-xl text-sm mb-2 outline-none">
-                    <input type="color" id="bankColorInput" value="#8A05BE" class="w-full h-8 mb-2 cursor-pointer">
+                    <input type="color" id="bankColorInput" value="#191970" class="w-full h-8 mb-2 cursor-pointer">
                     <button onclick="saveBank()" class="w-full bg-indigo-500 text-white py-2 rounded-xl font-bold text-xs">Salvar Banco</button>
                     <div class="space-y-2 mt-4" id="configBankList"></div>
                 </div>
@@ -141,7 +143,7 @@
 
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
-        const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Octubro", "Novembro", "Dezembro"];
+        const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         const now = new Date();
 
         monthsNames.forEach((m, i) => fMonth.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
@@ -222,7 +224,6 @@
             selectedPersonId = entry.personId;
             selectedMethod = entry.method === 'Crédito' ? 'Crédito' : 'Débito';
             document.getElementById('entryValue').value = entry.value;
-            // Ao editar, mostramos a descrição sem a parcela para o usuário não se confundir
             document.getElementById('entryDesc').value = entry.desc.replace(/\s\(\d+\/\d+\)$/, "");
             const parts = entry.date.split('/');
             document.getElementById('entryDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -247,7 +248,6 @@
                     data.entries.forEach(e => {
                         if (e.groupId === original.groupId && e.timestamp >= original.timestamp) {
                             e.value = val; e.bankId = selectedBankId; e.personId = selectedPersonId;
-                            // Preserva o sufixo (x/y) se existir
                             const match = e.desc.match(/\s\(\d+\/\d+\)$/);
                             e.desc = desc + (match ? match[0] : "");
                         }
@@ -292,7 +292,6 @@
                 if(e.type === 'income') inT += e.value; else exT += e.value;
                 const b = settings.banks[e.bankId] || { name: '?', color: '#ccc', init: '?' };
                 
-                // Lógica para extrair e limpar a parcela da descrição
                 let cleanDesc = e.desc;
                 let installmentHtml = "";
                 const match = e.desc.match(/\((\d+\/\d+)\)$/);
@@ -342,142 +341,95 @@
             saveData(); render();
         }
 
-        // Funções Cloud e Config (Mantidas)
-    async function uploadToCloud(event) {
-    const urlInput = document.getElementById('googleUrlInput');
-    GOOGLE_SCRIPT_URL = urlInput.value.trim();
-    
-    if(!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.startsWith('http')) {
-        return alert("Insira uma URL válida!");
-    }
-    
-    localStorage.setItem('google_sync_url', GOOGLE_SCRIPT_URL);
-    
-    const btn = event ? event.currentTarget : document.querySelector('button[onclick*="uploadToCloud"]');
-    const originalText = btn.innerText;
-    btn.innerText = "Enviando...";
-    btn.disabled = true;
+        // --- FUNÇÕES DE SINCRONIZAÇÃO OTIMIZADAS PARA CELULAR ---
 
-    try {
-        const payload = JSON.stringify({
-            entries: data.entries,
-            settings: settings
-        });
+        async function uploadToCloud(event) {
+            const urlInput = document.getElementById('googleUrlInput');
+            GOOGLE_SCRIPT_URL = urlInput.value.trim();
+            if(!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.startsWith('http')) return alert("Insira uma URL válida!");
+            localStorage.setItem('google_sync_url', GOOGLE_SCRIPT_URL);
+            
+            const btn = event ? (event.currentTarget || event.target) : null;
+            if(btn) btn.disabled = true;
 
-        // O segredo para funcionar no celular é o mode: 'no-cors'
-        // e enviar como 'text/plain' para o Google não bloquear
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors", 
-            headers: { "Content-Type": "text/plain" },
-            body: payload
-        });
-
-        alert("Backup enviado com sucesso!");
-    } catch(e) {
-        alert("Erro ao enviar: " + e.message);
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
-}
-
-// --- RESTAURAR (DOWNLOAD) ---
-function downloadFromCloud(event) {
-    const urlInput = document.getElementById('googleUrlInput');
-    GOOGLE_SCRIPT_URL = urlInput.value.trim();
-    
-    if (!GOOGLE_SCRIPT_URL || !GOOGLE_SCRIPT_URL.includes('/exec')) {
-        return alert("URL inválida! Use a URL que termina em /exec");
-    }
-
-    const btn = event ? event.currentTarget : document.querySelector('button[onclick*="downloadFromCloud"]');
-    const originalText = btn.innerText;
-    btn.innerText = "Baixando...";
-    btn.disabled = true;
-
-    // Nome único para a função de retorno (JSONP)
-    const callbackName = 'callback_' + Math.round(Math.random() * 1000000);
-    
-    // Criamos a função global que o Google Script vai chamar
-    window[callbackName] = function(response) {
-        try {
-            if (response && response.entries) {
-                // Mapeamento seguro para garantir que números sejam números
-                data.entries = response.entries.map(e => ({
-                    id: Number(e.id),
-                    groupId: e.groupId || null,
-                    type: e.type,
-                    value: parseFloat(e.value),
-                    desc: e.desc,
-                    method: e.method,
-                    bankId: e.bankId,
-                    personId: e.personId,
-                    date: e.date,
-                    timestamp: Number(e.timestamp),
-                    m: parseInt(e.m),
-                    y: parseInt(e.y)
-                }));
-                
-                settings = response.settings || { banks: {}, people: {} };
-                
-                saveData();
-                saveSett();
-                render();
-                alert("Dados restaurados!");
+            try {
+                const payload = JSON.stringify({ entries: data.entries, settings: settings });
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors", 
+                    headers: { "Content-Type": "text/plain" },
+                    body: payload
+                });
+                alert("Backup enviado com sucesso!");
+            } catch(e) {
+                alert("Erro ao enviar: " + e.message);
+            } finally {
+                if(btn) btn.disabled = false;
             }
-        } catch (err) {
-            alert("Erro ao processar dados da planilha.");
-        } finally {
-            cleanup();
         }
-    };
 
-    // Criamos o elemento <script> que contorna o bloqueio do navegador
-    const script = document.createElement('script');
-    script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
-    script.id = "jsonp-request";
+        function downloadFromCloud(event) {
+            const urlInput = document.getElementById('googleUrlInput');
+            GOOGLE_SCRIPT_URL = urlInput.value.trim();
+            if (!GOOGLE_SCRIPT_URL.includes('/exec')) return alert("URL inválida!");
 
-    // Limpeza em caso de erro de rede
-    script.onerror = function() {
-        alert("Não foi possível conectar ao Google. Verifique a URL e sua internet.");
-        cleanup();
-    };
+            const btn = event ? (event.currentTarget || event.target) : null;
+            const originalText = btn ? btn.innerText : "";
+            if(btn) { btn.innerText = "Baixando..."; btn.disabled = true; }
 
-    function cleanup() {
-        btn.innerText = originalText;
-        btn.disabled = false;
-        delete window[callbackName];
-        const oldScript = document.getElementById("jsonp-request");
-        if (oldScript) oldScript.remove();
-    }
+            const callbackName = 'callback_' + Math.round(Math.random() * 1000000);
+            window[callbackName] = function(response) {
+                try {
+                    if (response && response.entries) {
+                        data.entries = response.entries.map(e => ({
+                            ...e,
+                            id: Number(e.id),
+                            value: parseFloat(e.value),
+                            timestamp: Number(e.timestamp),
+                            m: parseInt(e.m),
+                            y: parseInt(e.y)
+                        }));
+                        settings = response.settings || { banks: {}, people: {} };
+                        saveData(); saveSett(); render();
+                        alert("Dados restaurados!");
+                    }
+                } catch (err) { alert("Erro ao processar dados."); }
+                finally { cleanup(); }
+            };
 
-    document.body.appendChild(script);
-}
-}
-function renderConfig() {
-    // Preenche a lista de pessoas
-    const personList = document.getElementById('configPersonList');
-    if (personList) {
-        personList.innerHTML = Object.keys(settings.people).map(id => `
-            <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase">
-                <span>${settings.people[id].name}</span>
-                <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
-            </div>`).join('');
-    }
+            const script = document.createElement('script');
+            script.src = `${GOOGLE_SCRIPT_URL}${GOOGLE_SCRIPT_URL.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
+            script.id = "jsonp-request";
+            script.onerror = () => { alert("Erro de conexão."); cleanup(); };
 
-    // Preenche a lista de bancos
-    const bankList = document.getElementById('configBankList');
-    if (bankList) {
-        bankList.innerHTML = Object.keys(settings.banks).map(id => `
-            <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4" style="border-color:${settings.banks[id].color}">
-                <span>${settings.banks[id].name}</span>
-                <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
-            </div>`).join('');
-    }
-    
-    document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
-}
+            function cleanup() {
+                if(btn) { btn.innerText = originalText; btn.disabled = false; }
+                delete window[callbackName];
+                const old = document.getElementById("jsonp-request");
+                if (old) old.remove();
+            }
+            document.body.removeChild(script);
+        }
+
+        function renderConfig() {
+            const personList = document.getElementById('configPersonList');
+            if (personList) {
+                personList.innerHTML = Object.keys(settings.people).map(id => `
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase">
+                        <span>${settings.people[id].name}</span>
+                        <button onclick="deletePerson('${id}')" class="text-red-400">X</button>
+                    </div>`).join('');
+            }
+            const bankList = document.getElementById('configBankList');
+            if (bankList) {
+                bankList.innerHTML = Object.keys(settings.banks).map(id => `
+                    <div class="flex justify-between p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase border-l-4" style="border-color:${settings.banks[id].color}">
+                        <span>${settings.banks[id].name}</span>
+                        <button onclick="deleteBank('${id}')" class="text-red-400">X</button>
+                    </div>`).join('');
+            }
+            document.getElementById('googleUrlInput').value = GOOGLE_SCRIPT_URL;
+        }
 
         function savePerson() {
             const n = document.getElementById('personNameInput').value.trim();
@@ -498,6 +450,3 @@ function renderConfig() {
     </script>
 </body>
 </html>
-
-
-
