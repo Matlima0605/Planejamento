@@ -55,6 +55,7 @@
     </nav>
 
     <main class="px-4 max-w-md mx-auto">
+        
         <section id="sec-resumo">
             <div id="historyList" class="space-y-3"></div>
             <div id="emptyState" class="hidden text-center py-20 text-slate-300">
@@ -133,14 +134,14 @@
     </main>
 
     <script>
-        // ESTADO GLOBAL
+        // --- ESTADO GLOBAL ---
         let GOOGLE_SCRIPT_URL = localStorage.getItem('google_sync_url') || "";
         let settings = JSON.parse(localStorage.getItem('fin_settings_v26')) || { banks: {}, people: {} };
         let data = JSON.parse(localStorage.getItem('fin_data_v26')) || { entries: [] };
         let currentType = 'income', selectedBankId = '', selectedPersonId = '', selectedMethod = 'Débito', editingId = null;
         let editingPersonId = null, editingBankId = null;
 
-        // FILTROS DE DATA
+        // --- FILTROS DE DATA ---
         const fMonth = document.getElementById('filterMonth');
         const fYear = document.getElementById('filterYear');
         const monthsNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -152,16 +153,18 @@
         function saveData() { localStorage.setItem('fin_data_v26', JSON.stringify(data)); }
         function saveSett() { localStorage.setItem('fin_settings_v26', JSON.stringify(settings)); renderConfig(); }
 
-        // NAVEGAÇÃO
+        // --- NAVEGAÇÃO ---
         function showTab(tab) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             const target = tab === 'config' ? 'sec-config' : (tab === 'resumo' ? 'sec-resumo' : 'sec-form');
             document.getElementById(target).classList.remove('hidden');
+            
             if(tab === 'ganhos' || tab === 'gastos') {
                 if (!editingId) { currentType = tab === 'ganhos' ? 'income' : 'expense'; resetFormFields(); }
                 setupForm();
             }
             if(tab === 'config') { editingId = null; renderConfig(); }
+            
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.toggle('active-tab', b.id === 'tab-'+tab);
                 b.classList.toggle('text-slate-400', b.id !== 'tab-'+tab);
@@ -169,7 +172,7 @@
             render();
         }
 
-        // FORMULÁRIO LANÇAMENTOS
+        // --- FORMULÁRIO DE LANÇAMENTOS ---
         function resetFormFields() {
             document.getElementById('entryValue').value = '';
             document.getElementById('entryDesc').value = '';
@@ -270,7 +273,7 @@
             saveData(); showTab('resumo'); resetFormFields();
         }
 
-        // RENDERIZAÇÃO
+        // --- RENDERIZAÇÃO ---
         function render() {
             const selM = parseInt(fMonth.value), selY = parseInt(fYear.value);
             let inT = 0, exT = 0;
@@ -340,7 +343,7 @@
             saveData(); render();
         }
 
-        // CONFIGURAÇÕES (PESSOAS/BANCOS)
+        // --- CONFIGURAÇÕES E EDIÇÃO DE BANCOS/PESSOAS ---
         function renderConfig() {
             document.getElementById('configPersonList').innerHTML = Object.keys(settings.people).map(id => `
                 <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[10px] font-bold uppercase mb-1 border border-slate-100">
@@ -404,10 +407,10 @@
         function deletePerson(id) { if(confirm("Excluir?")) { delete settings.people[id]; saveSett(); } }
         function deleteBank(id) { if(confirm("Excluir?")) { delete settings.banks[id]; saveSett(); } }
 
-        // --- SISTEMA DE SYNC UNIVERSAL ---
+        // --- SISTEMA DE SYNC DEFINITIVO (NATIVO FETCH API) ---
         async function uploadToCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
-            if(!url.includes('/exec')) return alert("URL Inválida!");
+            if(!url.includes('/exec')) return alert("URL Inválida! Certifique-se de copiar o link inteiro.");
             
             localStorage.setItem('google_sync_url', url);
             GOOGLE_SCRIPT_URL = url;
@@ -419,24 +422,24 @@
             const payload = JSON.stringify({ entries: data.entries, settings: settings });
 
             try {
-                // Envio via Texto Simples (Bypassa bloqueios agressivos de CORS em mobile)
+                // Envio nativo text/plain (O Google aceita sem bloquear por CORS)
                 await fetch(url, {
                     method: 'POST',
                     body: payload,
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
+                
                 alert("Dados enviados para a Nuvem com sucesso!");
             } catch(err) {
-                // O fetch com redirect para mobile frequentemente entra no catch, mesmo com sucesso no servidor.
-                // Alertamos que pode ter sido enviado.
-                alert("Sincronização processada. Verifique na planilha.");
+                // No mobile, o redirect do POST às vezes cai no catch, mas os dados chegam.
+                alert("Envio processado! Verifique a planilha pelo computador.");
             } finally {
                 btn.innerText = "Enviar Nuvem"; 
                 btn.disabled = false;
             }
         }
 
-        function downloadFromCloud() {
+        async function downloadFromCloud() {
             const url = document.getElementById('googleUrlInput').value.trim();
             if(!url.includes('/exec')) return alert("URL Inválida!");
 
@@ -444,16 +447,21 @@
             btn.innerText = "Baixando..."; 
             btn.disabled = true;
 
-            // Limpa execuções antigas presas
-            const oldScript = document.getElementById('jsonp-script');
-            if(oldScript) oldScript.remove();
+            try {
+                // Download via Fetch API com suporte nativo a CORS do Google
+                // Timestamp adicionado para evitar cache
+                const response = await fetch(`${url}?t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
 
-            const callbackName = 'syncCallback_' + Date.now();
-            
-            window[callbackName] = function(response) {
-                if(response) {
-                    if (response.entries) {
-                        data.entries = response.entries.map(e => ({
+                if (!response.ok) throw new Error("Falha na comunicação com o servidor.");
+
+                const resData = await response.json();
+
+                if (resData) {
+                    if (resData.entries) {
+                        data.entries = resData.entries.map(e => ({
                             ...e,
                             id: Number(e.id),
                             value: parseFloat(e.value),
@@ -464,33 +472,27 @@
                     } else {
                         data.entries = [];
                     }
-                    settings = response.settings || { banks: {}, people: {} };
-                    saveData(); saveSett(); render();
-                    alert("Dados Restaurados da Nuvem!");
+                    settings = resData.settings || { banks: {}, people: {} };
+                    
+                    saveData(); 
+                    saveSett(); 
+                    render();
+                    alert("Dados Restaurados da Nuvem com sucesso!");
                 }
-                cleanup();
-            };
 
-            const script = document.createElement('script');
-            script.id = 'jsonp-script';
-            script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}&t=${Date.now()}`;
-            
-            script.onerror = () => { 
-                alert("O navegador bloqueou a conexão. Verifique se o link possui a permissão 'Qualquer pessoa'."); 
-                cleanup(); 
-            };
-            
-            function cleanup() {
+            } catch (err) {
+                console.error(err);
+                alert("Erro de conexão. Verifique se o link possui a permissão 'Qualquer pessoa'.");
+            } finally {
                 btn.innerText = "Baixar Tudo"; 
                 btn.disabled = false;
-                delete window[callbackName];
             }
-
-            document.body.appendChild(script);
         }
 
+        // INICIALIZAÇÃO
         document.getElementById('entryDate').valueAsDate = new Date();
         render();
     </script>
 </body>
 </html>
+
